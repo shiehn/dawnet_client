@@ -88,6 +88,10 @@ def run_method(name, *args, **kwargs):
 #print(result)  # This should output: "Received an int: 10 and a string: example"
 
 async def _connect_to_server_async(token):
+
+    global byoc_token
+    byoc_token = token
+
     uri = "ws://" + str(byoc_server_ip) + ":" + str(byoc_server_port)
     async with websockets.connect(uri) as websocket:
 
@@ -102,8 +106,9 @@ async def _connect_to_server_async(token):
                 'status': 1
             }
         }
-        await websocket.send(json.dumps(register_compute_instance_msg))
 
+        print('REGISTER: ' +  str(register_compute_instance_msg))
+        await websocket.send(json.dumps(register_compute_instance_msg))
 
 
         '''
@@ -122,13 +127,20 @@ async def _connect_to_server_async(token):
 
                 print("PARSED_TYPE: " + str(json.loads(register_compute_instance_msg)['type']))
 
-                if register_compute_instance_msg['type'] == "run_method":
+                msg = json.loads(register_compute_instance_msg)
+
+                if msg['type'] == "run_method":
                     # Check if the status is already "running"
                     if run_status.status == "running":
                         await websocket.send("Plugin already started!")
                     else:
-                        # Start the start_plugin function as a separate task
-                        asyncio.create_task(run_method(websocket))
+                        data = msg['data']
+                        method_name = data['method_name']
+                        params = {param: details['value'] for param, details in data['params'].items()}
+
+                        # Now you can call run_method using argument unpacking
+                        # run_method is assumed to be defined elsewhere and available here
+                        asyncio.create_task(run_method(method_name, **params))
         except websockets.exceptions.ConnectionClosedOK:
             print("Connection was closed normally.")
 
