@@ -8,11 +8,23 @@ parser.add_argument('token', help='Token for BYOAC server connection')
 
 args = parser.parse_args()
 
-def arbitrary_method(a: int, b: str):
+async def arbitrary_method(a: int, b: str):
     try:
         # Simulate a longer-running operation
         time.sleep(1)
         print(f"THE METHOD RAN! Received an int: {a} and a string: {b}")
+
+
+
+        '''
+        
+        '''
+
+        byoac.results().add_file("path/to/filelyis", "wav")
+        byoac.results().add_message("a message to display")
+        await byoac.results().send()
+
+
         return "Method completed successfully."
     except Exception as e:
         print(f"Error in arbitrary_method: {e}")

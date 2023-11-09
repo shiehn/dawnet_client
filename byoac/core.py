@@ -1,5 +1,7 @@
 import json
 
+from byoac.results_handler import ResultsHandler
+
 byoc_server_ip = '0.0.0.0'
 byoc_server_port = '8765'
 
@@ -18,7 +20,6 @@ class RunStatus:
         self.status = 'idle'
 
 run_status = RunStatus()
-byoc_token = ''
 
 
 # Method registry for the client
@@ -36,12 +37,16 @@ class WebSocketClient:
         self.method_details = {}
         self.run_status = 'idle'
         self.byoc_token = None
+        self.message_id = None
+        self.results = None
+
 
     async def connect(self):
         if self.websocket is None or self.websocket.closed:
             uri = f"ws://{self.server_ip}:{self.server_port}"
             self.websocket = await websockets.connect(uri)
             print(f"Connected to {uri}")
+            self.results = ResultsHandler(self.websocket, self.byoc_token)
             await self.register_compute_instance()
 
     async def register_compute_instance(self):
@@ -97,7 +102,6 @@ class WebSocketClient:
         await self.websocket.send(json.dumps(register_compute_contract_msg))
         print(f"Sent contract for method {name}")
 
-
     async def run_method(self, name, **kwargs):
         print('self.method_registry: ' + str(self.method_registry))
 
@@ -142,7 +146,7 @@ class WebSocketClient:
             # Continuous listening loop
             while True:
                 register_compute_instance_msg = await self.websocket.recv()
-                print(f"Received: {register_compute_instance_msg}")
+                print(f"RAW_MSG: {register_compute_instance_msg}")
 
                 '''
                 register_compute_instance_msg = {"data": {"id": "bd7be782-b04b-4e7a-af5f-535f440511e0", "data": {"method": "run", "params": [{"name": "param_1", "type": "string", "default_value": "Hello World"}]}, "created_at": "2023-11-06T19:34:37.784584Z", "updated_at": "2023-11-06T19:34:37.784594Z"}, "type": "run_method", "token": "bd7be782-b04b-4e7a-af5f-535f440511e0"}
@@ -157,6 +161,8 @@ class WebSocketClient:
                     if run_status.status == "running":
                         await self.websocket.send("Plugin already started!")
                     else:
+                        self.message_id = msg['message_id']
+                        self.results.set_message_id(self.message_id)
                         data = msg['data']
                         method_name = data['method_name']
                         # Extract 'value' for each parameter to build kwargs
@@ -180,6 +186,9 @@ class WebSocketClient:
 
 # Create a single WebSocketClient instance
 _client = WebSocketClient('0.0.0.0', '8765')
+
+def results():
+    return _client.results
 
 # Define the functions that will interact with the WebSocketClient instance
 def set_token(token):
