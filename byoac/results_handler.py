@@ -1,5 +1,8 @@
 # Existing imports...
 import json
+import os
+
+from byoac.file_uploader import FileUploader
 
 
 # ResultsHandler class to handle the results
@@ -11,6 +14,7 @@ class ResultsHandler:
         self.errors = []
         self.files = []
         self.messages = []
+        self.file_uploader = FileUploader()
 
     def add_error(self, error):
         self.errors.append(error)
@@ -18,12 +22,16 @@ class ResultsHandler:
     def set_message_id(self, message_id):
         self.message_id = message_id
 
-    def add_file(self, file_path, file_type):
-        # Logic to convert the file path to a URL
-        file_url = f"https://example.com/{file_path}"  # Placeholder for file URL conversion
-        self.files.append({'name': file_path, 'type': file_type, 'url': file_url})
+    async def add_file(self, file_path, file_type):
+        print('STEVE:FILE_PATH:' + file_path)
 
-    def add_message(self, message):
+        # Await the coroutine and get the result
+        file_url = await self.file_uploader.upload(file_path, file_type)
+
+        print('STEVE:FILE_URL:' + file_url)
+        self.files.append({'name': os.path.basename(file_path), 'type': file_type, 'url': file_url})
+
+    async def add_message(self, message):
         self.messages.append(message)
 
     async def send(self):
