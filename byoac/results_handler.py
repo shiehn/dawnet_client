@@ -23,7 +23,7 @@ class ResultsHandler:
         self.message_id = message_id
 
     async def add_file(self, file_path, file_type):
-        print('STEVE:FILE_PATH:' + file_path)
+        print('STEVE:FILE_PATH_TO_UPLOAD:' + file_path)
 
         # Await the coroutine and get the result
         file_url = await self.file_uploader.upload(file_path, file_type)

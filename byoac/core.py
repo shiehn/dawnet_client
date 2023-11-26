@@ -18,17 +18,17 @@ from inspect import signature, Parameter
 # Apply nest_asyncio to allow nested running of event loops
 nest_asyncio.apply()
 
+
 class RunStatus:
     def __init__(self):
         self.status = 'idle'
 
-run_status = RunStatus()
 
+run_status = RunStatus()
 
 # Method registry for the client
 method_registry_local = {}
 method_details_local = {}
-
 
 
 class WebSocketClient:
@@ -42,7 +42,6 @@ class WebSocketClient:
         self.byoc_token = None
         self.message_id = None
         self.results = None
-
 
     async def connect(self):
         if self.websocket is None or self.websocket.closed:
@@ -139,7 +138,6 @@ class WebSocketClient:
             run_status.status = 'stopped'
             raise Exception("Method not registered")
 
-
     async def download_gcp_files(self, obj, session):
         """
         Recursively search for GCP URLs in a JSON object and download the files.
@@ -168,7 +166,6 @@ class WebSocketClient:
                 return local_path
             else:
                 raise Exception(f"Failed to download file: {url}")
-
 
     async def listen(self):
         if self.byoc_token is None:
@@ -204,10 +201,10 @@ class WebSocketClient:
                             data = msg['data']
                             method_name = data['method_name']
                             # Extract 'value' for each parameter to build kwargs
-                            params = {param_name: param_details['value'] for param_name, param_details in data['params'].items()}
+                            params = {param_name: param_details['value'] for param_name, param_details in
+                                      data['params'].items()}
 
                             print("PARAMS: " + str(params))
-
 
                             # Now you can call run_method using argument unpacking
                             asyncio.create_task(self.run_method(method_name, **params))
@@ -225,18 +222,23 @@ class WebSocketClient:
 # Create a single WebSocketClient instance
 _client = WebSocketClient('0.0.0.0', '8765')
 
+
 def results():
     return _client.results
+
 
 # Define the functions that will interact with the WebSocketClient instance
 def set_token(token):
     _client.set_token(token)
 
+
 async def _register_method(name, method):
     await _client.register_method(name, method)
 
+
 def register_method(name, method):
     asyncio.run(_register_method(name, method))
+
 
 def connect_to_server():
     _client.run()
