@@ -68,24 +68,41 @@ class WebSocketClient:
         await self.websocket.send(json.dumps(register_compute_instance_msg))
         print("Compute instance registered with the server.")
 
-    async def register_method(self, name, method):
-        if self.byoc_token is None:
-            raise Exception("Token not set. Please call set_token(token) before registering a method.")
+async def register_method(self, name, method):
+    if self.byoc_token is None:
+        raise Exception("Token not set. Please call set_token(token) before registering a method.")
 
-        await self.connect()  # Ensure we're connected
+    if not iscoroutinefunction(method):
+        raise ValueError("The method must be asynchronous (async).")
 
-        # Register the method
-        self.method_registry[name] = method
+    await self.connect()  # Ensure we're connected
 
-        # Get the signature of the method
-        sig = signature(method)
+    sig = signature(method)
+    params = []
+    param_names = set()
+    supported_types = {'int', 'float', 'str', 'ByoacFilePath'}
+    max_param_count = 12
+    max_param_name_length = 36
 
-        # Build a list of dictionaries for each parameter
-        params = [
-            {"name": param.name, "type": param.annotation.__name__, "default_value": None}
-            for param in sig.parameters.values()
-            if param.annotation is not Parameter.empty
-        ]
+    if len(sig.parameters) > max_param_count:
+        raise ValueError("Method cannot have more than 12 parameters.")
+
+    for param in sig.parameters.values():
+        if len(param.name) > max_param_name_length:
+            raise ValueError(f"Parameter name '{param.name}' exceeds 36 characters.")
+
+        if param.name in param_names:
+            raise ValueError(f"Duplicate parameter name '{param.name}' detected.")
+        param_names.add(param.name)
+
+        if param.annotation is Parameter.empty:
+            raise ValueError(f"Parameter '{param.name}' is missing a type annotation.")
+
+        param_type_name = param.annotation.__name__
+        if param_type_name not in supported_types:
+            raise ValueError(f"Unsupported type '{param_type_name}' for parameter '{param.name}'.")
+
+        params.append({"name": param.name, "type": param_type_name, "default_value": None})
 
         # Create the JSON payload
         method_details = {
@@ -93,6 +110,7 @@ class WebSocketClient:
             "params": params
         }
         self.method_details[name] = json.dumps(method_details)
+
 
         # Register the compute contract with the server
         register_compute_contract_msg = {
