@@ -2,7 +2,7 @@
 import json
 import os
 
-from byoac.file_uploader import FileUploader
+from dawnet_client.file_uploader import FileUploader
 
 
 # ResultsHandler class to handle the results

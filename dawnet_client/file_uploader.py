@@ -1,7 +1,7 @@
 import os
 
 from aiohttp import ClientSession
-from byoac.config import API_BASE_URL
+from dawnet_client.config import API_BASE_URL
 
 
 class FileUploader:

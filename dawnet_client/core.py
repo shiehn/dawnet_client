@@ -3,10 +3,10 @@ import os
 import tempfile
 
 import aiohttp
-from byoac.results_handler import ResultsHandler
+from dawnet_client.results_handler import ResultsHandler
 
-byoc_server_ip = '0.0.0.0'
-byoc_server_port = '8765'
+dawnet_server_ip = '0.0.0.0'
+dawnet_server_port = '8765'
 
 import asyncio
 import websockets
@@ -39,7 +39,7 @@ class WebSocketClient:
         self.method_registry = {}
         self.method_details = {}
         self.run_status = 'idle'
-        self.byoc_token = None
+        self.dawnet_token = None
         self.message_id = None
         self.results = None
 
@@ -48,16 +48,16 @@ class WebSocketClient:
             uri = f"ws://{self.server_ip}:{self.server_port}"
             self.websocket = await websockets.connect(uri)
             print(f"Connected to {uri}")
-            self.results = ResultsHandler(self.websocket, self.byoc_token)
+            self.results = ResultsHandler(self.websocket, self.dawnet_token)
             await self.register_compute_instance()
 
     async def register_compute_instance(self):
-        if self.byoc_token is None:
+        if self.dawnet_token is None:
             raise Exception("Token not set. Please call set_token(token) before registering a method.")
 
         # Construct the message to register the compute instance
         register_compute_instance_msg = {
-            'token': self.byoc_token,
+            'token': self.dawnet_token,
             'type': 'register',
             'data': {
                 'status': 1  # Assuming 'status': 1 indicates a successful registration
@@ -68,59 +68,59 @@ class WebSocketClient:
         await self.websocket.send(json.dumps(register_compute_instance_msg))
         print("Compute instance registered with the server.")
 
-async def register_method(self, name, method):
-    if self.byoc_token is None:
-        raise Exception("Token not set. Please call set_token(token) before registering a method.")
+    async def register_method(self, name, method):
+        if self.dawnet_token is None:
+            raise Exception("Token not set. Please call set_token(token) before registering a method.")
 
-    if not iscoroutinefunction(method):
-        raise ValueError("The method must be asynchronous (async).")
+        if not asyncio.iscoroutinefunction(method):
+            raise ValueError("The method must be asynchronous (async).")
 
-    await self.connect()  # Ensure we're connected
+        await self.connect()  # Ensure we're connected
 
-    sig = signature(method)
-    params = []
-    param_names = set()
-    supported_types = {'int', 'float', 'str', 'ByoacFilePath'}
-    max_param_count = 12
-    max_param_name_length = 36
+        sig = signature(method)
+        params = []
+        param_names = set()
+        supported_types = {'int', 'float', 'str', 'DAWNetFilePath'}
+        max_param_count = 12
+        max_param_name_length = 36
 
-    if len(sig.parameters) > max_param_count:
-        raise ValueError("Method cannot have more than 12 parameters.")
+        if len(sig.parameters) > max_param_count:
+            raise ValueError("Method cannot have more than 12 parameters.")
 
-    for param in sig.parameters.values():
-        if len(param.name) > max_param_name_length:
-            raise ValueError(f"Parameter name '{param.name}' exceeds 36 characters.")
+        for param in sig.parameters.values():
+            if len(param.name) > max_param_name_length:
+                raise ValueError(f"Parameter name '{param.name}' exceeds 36 characters.")
 
-        if param.name in param_names:
-            raise ValueError(f"Duplicate parameter name '{param.name}' detected.")
-        param_names.add(param.name)
+            if param.name in param_names:
+                raise ValueError(f"Duplicate parameter name '{param.name}' detected.")
+            param_names.add(param.name)
 
-        if param.annotation is Parameter.empty:
-            raise ValueError(f"Parameter '{param.name}' is missing a type annotation.")
+            if param.annotation is Parameter.empty:
+                raise ValueError(f"Parameter '{param.name}' is missing a type annotation.")
 
-        param_type_name = param.annotation.__name__
-        if param_type_name not in supported_types:
-            raise ValueError(f"Unsupported type '{param_type_name}' for parameter '{param.name}'.")
+            param_type_name = param.annotation.__name__
+            if param_type_name not in supported_types:
+                raise ValueError(f"Unsupported type '{param_type_name}' for parameter '{param.name}'.")
 
-        params.append({"name": param.name, "type": param_type_name, "default_value": None})
+            params.append({"name": param.name, "type": param_type_name, "default_value": None})
 
-        # Create the JSON payload
-        method_details = {
-            "method_name": name,
-            "params": params
-        }
-        self.method_details[name] = json.dumps(method_details)
+            # Create the JSON payload
+            method_details = {
+                "method_name": name,
+                "params": params
+            }
+            self.method_details[name] = json.dumps(method_details)
 
 
-        # Register the compute contract with the server
-        register_compute_contract_msg = {
-            'token': self.byoc_token,
-            'type': 'contract',
-            'data': method_details
-        }
+            # Register the compute contract with the server
+            register_compute_contract_msg = {
+                'token': self.dawnet_token,
+                'type': 'contract',
+                'data': method_details
+            }
 
-        await self.websocket.send(json.dumps(register_compute_contract_msg))
-        print(f"Sent contract for method {name}")
+            await self.websocket.send(json.dumps(register_compute_contract_msg))
+            print(f"Sent contract for method {name}")
 
     async def run_method(self, name, **kwargs):
         print('self.method_registry: ' + str(self.method_registry))
@@ -186,7 +186,7 @@ async def register_method(self, name, method):
                 raise Exception(f"Failed to download file: {url}")
 
     async def listen(self):
-        if self.byoc_token is None:
+        if self.dawnet_token is None:
             raise Exception("Token not set. Please call set_token(token) before starting to listen.")
 
         await self.connect()  # Ensure we're connected
@@ -231,7 +231,7 @@ async def register_method(self, name, method):
             print("Connection was closed normally.")
 
     def set_token(self, token):
-        self.byoc_token = token
+        self.dawnet_token = token
 
     def run(self):
         asyncio.run(self.listen())
@@ -263,5 +263,5 @@ def connect_to_server():
 
 
 # THIS IS A SPECIAL TYPE THAT WILL BE USED TO REPRESENT FILE UPLOADS
-class ByoacFilePath(str):
+class DAWNetFilePath(str):
     pass
