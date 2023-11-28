@@ -122,8 +122,11 @@ class WebSocketClient:
             await self.websocket.send(json.dumps(register_compute_contract_msg))
             print(f"Sent contract for method {name}")
 
+            # Add method to the registry
+            self.method_registry[name] = method
+
     async def run_method(self, name, **kwargs):
-        print('self.method_registry: ' + str(self.method_registry))
+        print('run_method: self.method_registry: ' + str(self.method_registry))
 
         run_status.status = 'running'
         if name in self.method_registry:
@@ -210,6 +213,9 @@ class WebSocketClient:
                     await self.download_gcp_files(msg, session)
 
                     if msg['type'] == "run_method":
+
+                        print("RUN_METHOD: " + str(msg))
+
                         # Check if the status is already "running"
                         if run_status.status == "running":
                             await self.websocket.send("Plugin already started!")
@@ -255,7 +261,12 @@ async def _register_method(name, method):
 
 
 def register_method(name, method):
-    asyncio.run(_register_method(name, method))
+    try:
+        asyncio.run(_register_method(name, method))
+    except Exception as e:
+        print(f"Error registering method: {e}")
+
+    print('METHODS REGISTERED: ' + str(_client.method_registry))
 
 
 def connect_to_server():
