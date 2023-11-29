@@ -42,6 +42,31 @@ class WebSocketClient:
         self.dawnet_token = None
         self.message_id = None
         self.results = None
+        self.author = "Default Author"
+        self.name = "Default Name"
+        self.description = "Default Description"
+        self.version = "0.0.0"
+
+    async def send_registered_methods_to_server(self):
+        await self.connect()  # Ensure we're connected
+
+        # Check if there's at least one method registered
+        if self.method_registry:
+            # Get the last registered method's name and details
+            last_method_name, last_method = next(reversed(self.method_registry.items()))
+            last_method_details = self.method_details[last_method_name]
+
+            # Construct the message to register the method
+            register_compute_contract_msg = {
+                'token': self.dawnet_token,
+                'type': 'contract',
+                'data': last_method_details
+            }
+
+            # Send the registration message to the server
+            await self.websocket.send(json.dumps(register_compute_contract_msg))
+            print(f"Sent contract for method {last_method_name}")
+
 
     async def connect(self):
         if self.websocket is None or self.websocket.closed:
@@ -68,7 +93,7 @@ class WebSocketClient:
         await self.websocket.send(json.dumps(register_compute_instance_msg))
         print("Compute instance registered with the server.")
 
-    async def register_method(self, name, method):
+    async def register_method(self, name: str, method):
         if self.dawnet_token is None:
             raise Exception("Token not set. Please call set_token(token) before registering a method.")
 
@@ -105,25 +130,19 @@ class WebSocketClient:
             params.append({"name": param.name, "type": param_type_name, "default_value": None})
 
             # Create the JSON payload
+            # Store method details without sending to the server
             method_details = {
                 "method_name": name,
-                "params": params
+                "params": params,
+                "author": self.author,
+                "name": self.name,
+                "description": self.description,
+                "version": self.version
             }
-            self.method_details[name] = json.dumps(method_details)
+            self.method_details[name] = method_details
 
-
-            # Register the compute contract with the server
-            register_compute_contract_msg = {
-                'token': self.dawnet_token,
-                'type': 'contract',
-                'data': method_details
-            }
-
-            await self.websocket.send(json.dumps(register_compute_contract_msg))
-            print(f"Sent contract for method {name}")
-
-            # Add method to the registry
-            self.method_registry[name] = method
+            # Update registry with the latest method
+            self.method_registry = {name: method}
 
     async def run_method(self, name, **kwargs):
         print('run_method: self.method_registry: ' + str(self.method_registry))
@@ -239,6 +258,31 @@ class WebSocketClient:
     def set_token(self, token):
         self.dawnet_token = token
 
+    def set_author(self, author):
+        self.author = author
+        self.update_all_method_details()
+
+    def set_name(self, name):
+        self.name = name
+        self.update_all_method_details()
+
+    def set_description(self, description):
+        self.description = description
+        self.update_all_method_details()
+
+    def set_version(self, version):
+        self.version = version
+        self.update_all_method_details()
+
+    def update_all_method_details(self):
+        for method_name, method_detail_json in self.method_details.items():
+            method_detail = json.loads(method_detail_json)
+            method_detail["author"] = self.author
+            method_detail["name"] = self.name
+            method_detail["description"] = self.description
+            method_detail["version"] = self.version
+            self.method_details[method_name] = json.dumps(method_detail)
+
     def run(self):
         asyncio.run(self.listen())
 
@@ -269,10 +313,28 @@ def register_method(name, method):
     print('METHODS REGISTERED: ' + str(_client.method_registry))
 
 
+def set_author(author):
+    _client.set_author(author)
+
+
+def set_name(name):
+    _client.set_name(name)
+
+
+def set_description(description):
+    _client.set_description(description)
+
+
+def set_version(version):
+    _client.set_version(version)
+
+
 def connect_to_server():
-    _client.run()
+    asyncio.run(_client.send_registered_methods_to_server())
+    asyncio.run(_client.listen())
 
 
 # THIS IS A SPECIAL TYPE THAT WILL BE USED TO REPRESENT FILE UPLOADS
 class DAWNetFilePath(str):
     pass
+
