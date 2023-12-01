@@ -76,7 +76,11 @@ class WebSocketClient:
             self.websocket = await websockets.connect(uri)
             print(f"Connected to {uri}")
             self.results = ResultsHandler(self.websocket, self.dawnet_token)
+
+        try:
             await self.register_compute_instance()
+        except Exception as e:
+            print(f"Error registering compute instance: {e}")
 
     async def register_compute_instance(self):
         if self.dawnet_token is None:
@@ -141,10 +145,9 @@ class WebSocketClient:
                 "description": self.description,
                 "version": self.version
             }
+            self.method_registry[name] = method
             self.method_details[name] = method_details
 
-            # Update registry with the latest method
-            self.method_registry = {name: method}
 
     async def run_method(self, name, **kwargs):
         print('run_method: self.method_registry: ' + str(self.method_registry))
@@ -277,13 +280,16 @@ class WebSocketClient:
         self.update_all_method_details()
 
     def update_all_method_details(self):
-        for method_name, method_detail_json in self.method_details.items():
-            method_detail = json.loads(method_detail_json)
+        for method_name, method_detail in self.method_details.items():
+            # If method_detail is already a dict, no need to load it
             method_detail["author"] = self.author
             method_detail["name"] = self.name
             method_detail["description"] = self.description
             method_detail["version"] = self.version
-            self.method_details[method_name] = json.dumps(method_detail)
+            self.method_details[method_name] = method_detail  # If you need it as a dict
+            # If you need to store it as a JSON string, then use json.dumps
+            # self.method_details[method_name] = json.dumps(method_detail)
+
 
     def run(self):
         asyncio.run(self.listen())

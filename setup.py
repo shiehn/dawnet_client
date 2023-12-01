@@ -2,12 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name='dawnet-client',
-    version='0.0.1',
+    version='0.0.4',
     packages=find_packages(),
     install_requires=[
         'websockets',
         'nest_asyncio',
-        'asyncio',
     ],
     python_requires='>=3.6',
     entry_points={
