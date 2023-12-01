@@ -5,6 +5,8 @@ import tempfile
 import aiohttp
 from dawnet_client.results_handler import ResultsHandler
 
+from dawnet_client.config import SOCKET_IP, SOCKET_PORT
+
 dawnet_server_ip = '0.0.0.0'
 dawnet_server_port = '8765'
 
@@ -288,7 +290,7 @@ class WebSocketClient:
 
 
 # Create a single WebSocketClient instance
-_client = WebSocketClient('0.0.0.0', '8765')
+_client = WebSocketClient(SOCKET_IP, SOCKET_PORT)
 
 
 def results():
