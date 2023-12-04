@@ -145,9 +145,10 @@ class WebSocketClient:
                 "description": self.description,
                 "version": self.version
             }
-            self.method_registry[name] = method
             self.method_details[name] = method_details
 
+            # Update registry with the latest method
+            self.method_registry = {name: method}
 
     async def run_method(self, name, **kwargs):
         print('run_method: self.method_registry: ' + str(self.method_registry))
@@ -262,6 +263,8 @@ class WebSocketClient:
 
     def set_token(self, token):
         self.dawnet_token = token
+        if self.results is not None:
+            self.results.update_token(token)
 
     def set_author(self, author):
         self.author = author

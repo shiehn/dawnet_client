@@ -16,6 +16,9 @@ class ResultsHandler:
         self.messages = []
         self.file_uploader = FileUploader()
 
+    def update_token(self, token):
+        self.token = token
+
     def add_error(self, error):
         self.errors.append(error)
 
