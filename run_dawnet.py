@@ -33,7 +33,7 @@ dawnet_client.set_description("This is not a real description.")
 dawnet_client.register_method("arbitrary_method", arbitrary_method)
 
 
-print("REGISTERED TOKEN & " + str("arbitrary_method"))
+print("REGISTERED TOKEN & " + str(arbitrary_method))
 dawnet_client.connect_to_server()
 
 
