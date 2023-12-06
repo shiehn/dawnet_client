@@ -4,8 +4,8 @@ parser = argparse.ArgumentParser(description='Connect to DAWNet server.')
 parser.add_argument('token', help='Token for DAWNet server connection')
 args = parser.parse_args()
 
-import dawnet_client
-from dawnet_client import DAWNetFilePath
+from dawnet_client import DAWNetFilePath, dawnet_client
+
 async def arbitrary_method(a: int, b: DAWNetFilePath):
     try:
 
