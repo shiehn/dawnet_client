@@ -1,10 +1,12 @@
 import argparse
 import time
+
 parser = argparse.ArgumentParser(description='Connect to DAWNet server.')
 parser.add_argument('token', help='Token for DAWNet server connection')
 args = parser.parse_args()
 
-from dawnet_client import DAWNetFilePath, dawnet_client
+import dawnet_client.core as dawnet
+from dawnet_client.core import DAWNetFilePath
 
 async def arbitrary_method(a: int, b: DAWNetFilePath):
     try:
@@ -16,10 +18,10 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
 
         # DO INFERENCE SHIT HERE
 
-        await dawnet_client.results().add_file(b, "wav")
-        # await dawnet_client.results().add_file(c, "wav")
-        await dawnet_client.results().add_message("This is a message XYZ")
-        await dawnet_client.results().send()
+        await dawnet.results().add_file(b, "wav")
+        # await dawnet.results().add_file(c, "wav")
+        await dawnet.results().add_message("This is a message XYZ")
+        await dawnet.results().send()
 
         return True
     except Exception as e:
@@ -27,14 +29,14 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
         return f"Method encountered an error: {e}"
 
 
-dawnet_client.set_token(token=args.token)
-dawnet_client.set_name("My Remote Code")
-dawnet_client.set_description("This is not a real description.")
-dawnet_client.register_method("arbitrary_method", arbitrary_method)
+dawnet.set_token(token=args.token)
+dawnet.set_name("My Remote Code")
+dawnet.set_description("This is not a real description.")
+dawnet.register_method("arbitrary_method", arbitrary_method)
 
 
 print("REGISTERED TOKEN & " + str(arbitrary_method))
-dawnet_client.connect_to_server()
+dawnet.connect_to_server()
 
 
 
