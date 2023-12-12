@@ -7,6 +7,7 @@ setup(
     install_requires=[
         'websockets',
         'nest_asyncio',
+        'sentry-sdk',
     ],
     python_requires='>=3.6',
     entry_points={
@@ -20,5 +21,5 @@ setup(
     description="DAWNet client enables remote execution of python code triggered from a DAW.",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/byoca",
+    url="https://dawnet.tools",
 )

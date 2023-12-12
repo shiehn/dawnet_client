@@ -4,6 +4,8 @@ import os
 
 from dawnet_client.file_uploader import FileUploader
 
+from dawnet_client.dawnet_client.dn_tracer import DNMsgStage, DNTag, SentryEventLogger, DNSystemType
+
 
 # ResultsHandler class to handle the results
 class ResultsHandler:
@@ -26,13 +28,18 @@ class ResultsHandler:
         self.message_id = message_id
 
     async def add_file(self, file_path, file_type):
-        print('STEVE:FILE_PATH_TO_UPLOAD:' + file_path)
+        try:
+            file_url = await self.file_uploader.upload(file_path, file_type)
+            self.files.append({'name': os.path.basename(file_path), 'type': file_type, 'url': file_url})
+            return
+        except Exception as e:
+            dn_tracer = SentryEventLogger(DNSystemType.DN_CLIENT.value)
+            dn_tracer.log_error(self.token, {
+                DNTag.DNMsgStage.value: DNMsgStage.UPLOAD_ASSET.value,
+                DNTag.DNMsg.value: str(e),
+            })
+            self.add_error(str(e))
 
-        # Await the coroutine and get the result
-        file_url = await self.file_uploader.upload(file_path, file_type)
-
-        print('STEVE:FILE_URL:' + file_url)
-        self.files.append({'name': os.path.basename(file_path), 'type': file_type, 'url': file_url})
 
     async def add_message(self, message):
         self.messages.append(message)

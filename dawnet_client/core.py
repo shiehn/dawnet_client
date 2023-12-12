@@ -1,25 +1,20 @@
-import json
-import os
-import tempfile
-
-import aiohttp
-from dawnet_client.results_handler import ResultsHandler
-
-from dawnet_client.config import SOCKET_IP, SOCKET_PORT
-
-dawnet_server_ip = '0.0.0.0'
-dawnet_server_port = '8765'
-
 import asyncio
 import websockets
 import nest_asyncio
-import time
 import json
+import logging
+import os
+import tempfile
+import aiohttp
+from dawnet_client.results_handler import ResultsHandler
+from dawnet_client.config import SOCKET_IP, SOCKET_PORT
+from dawnet_client.dn_tracer import SentryEventLogger, DNSystemType,DNTag, DNMsgStage
 from inspect import signature, Parameter
 
 # Apply nest_asyncio to allow nested running of event loops
 nest_asyncio.apply()
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 class RunStatus:
     def __init__(self):
@@ -48,6 +43,8 @@ class WebSocketClient:
         self.name = "Default Name"
         self.description = "Default Description"
         self.version = "0.0.0"
+        self.logger = logging.getLogger(__name__)
+        self.dn_tracer = SentryEventLogger(service_name=DNSystemType.DN_CLIENT.value)
 
     async def send_registered_methods_to_server(self):
         await self.connect()  # Ensure we're connected
@@ -67,20 +64,28 @@ class WebSocketClient:
 
             # Send the registration message to the server
             await self.websocket.send(json.dumps(register_compute_contract_msg))
-            print(f"Sent contract for method {last_method_name}")
-
+            self.dn_tracer.log_event(self.dawnet_token, {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_CONTRACT.value,
+                DNTag.DNMsg.value: f"Sent contract for registration. Token: {self.dawnet_token}",
+            })
 
     async def connect(self):
         if self.websocket is None or self.websocket.closed:
             uri = f"ws://{self.server_ip}:{self.server_port}"
             self.websocket = await websockets.connect(uri)
-            print(f"Connected to {uri}")
+            self.dn_tracer.log_event(self.dawnet_token, {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
+                DNTag.DNMsg.value: f"Connected to {uri}",
+            })
             self.results = ResultsHandler(self.websocket, self.dawnet_token)
 
         try:
             await self.register_compute_instance()
         except Exception as e:
-            print(f"Error registering compute instance: {e}")
+            self.dn_tracer.log_error(self.dawnet_token, {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
+                DNTag.DNMsg.value: f"Error connecting. {e}",
+            })
 
     async def register_compute_instance(self):
         if self.dawnet_token is None:
@@ -97,7 +102,6 @@ class WebSocketClient:
 
         # Send the registration message to the server
         await self.websocket.send(json.dumps(register_compute_instance_msg))
-        print("Compute instance registered with the server.")
 
     async def register_method(self, name: str, method):
         if self.dawnet_token is None:
@@ -150,34 +154,43 @@ class WebSocketClient:
             # Update registry with the latest method
             self.method_registry = {name: method}
 
-    async def run_method(self, name, **kwargs):
-        print('run_method: self.method_registry: ' + str(self.method_registry))
+            self.dn_tracer.log_event(self.dawnet_token, {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
+                DNTag.DNMsg.value: f"Registered method: {name}",
+            })
 
+    async def run_method(self, name, **kwargs):
         run_status.status = 'running'
         if name in self.method_registry:
             method = self.method_registry[name]
             if asyncio.iscoroutinefunction(method):
-                print("IS A COROUTINE")
                 # If the method is a coroutine, await it directly
                 try:
                     result = await method(**kwargs)
-                    print("METHOD RESULT: " + str(result))
+                    self.dn_tracer.log_event(self.dawnet_token, {
+                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
+                        DNTag.DNMsg.value: f"Ran method: {name}",
+                    })
                 except Exception as e:
-                    print(f"Error running method: {e}")
+                    self.dn_tracer.log_error(self.dawnet_token, {
+                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
+                        DNTag.DNMsg.value: f"Error running method: {e}",
+                    })
             else:
-                print("IS NOT A COROUTINE")
                 # If the method is not a coroutine, run it in an executor
                 loop = asyncio.get_running_loop()
-                print("HEY")
                 try:
-                    print('kwargs: ' + str(kwargs))
-                    # print('args: ' + str(args))
-
                     func = lambda: method(**kwargs)
                     result = await loop.run_in_executor(None, func)
-                    print("METHOD RESULT: " + str(result))
+                    self.dn_tracer.log_event(self.dawnet_token, {
+                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
+                        DNTag.DNMsg.value: f"Ran method: {name}",
+                    })
                 except Exception as e:
-                    print(f"Error running method: {e}")
+                    self.dn_tracer.log_error(self.dawnet_token, {
+                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
+                        DNTag.DNMsg.value: f"Error running method: {e}",
+                    })
             run_status.status = 'stopped'
             return result
         else:
@@ -222,25 +235,25 @@ class WebSocketClient:
         try:
             # Create a temporary directory
             self.temp_dir = tempfile.mkdtemp()
-            print('TEMP_DIR: ' + str(self.temp_dir))
+            self.logger.info(f"Created a temporary directory: {self.temp_dir}")
 
             async with aiohttp.ClientSession() as session:
                 # Continuous listening loop
                 while True:
                     register_compute_instance_msg = await self.websocket.recv()
-                    print(f"RAW_MSG: {register_compute_instance_msg}")
-
-                    print("PARSED_TYPE: " + str(json.loads(register_compute_instance_msg)['type']))
 
                     msg = json.loads(register_compute_instance_msg)
 
                     # Download GCP-hosted files and update the JSON
-                    await self.download_gcp_files(msg, session)
+                    try:
+                        await self.download_gcp_files(msg, session)
+                    except Exception as e:
+                        self.dn_tracer.log_error(_client.dawnet_token, {
+                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_DOWNLOAD_ASSET.value,
+                            DNTag.DNMsg.value: f"Error downloading GCP files: {e}",
+                        })
 
                     if msg['type'] == "run_method":
-
-                        print("RUN_METHOD: " + str(msg))
-
                         # Check if the status is already "running"
                         if run_status.status == "running":
                             await self.websocket.send("Plugin already started!")
@@ -253,13 +266,14 @@ class WebSocketClient:
                             params = {param_name: param_details['value'] for param_name, param_details in
                                       data['params'].items()}
 
-                            print("PARAMS: " + str(params))
-
                             # Now you can call run_method using argument unpacking
                             asyncio.create_task(self.run_method(method_name, **params))
 
         except websockets.exceptions.ConnectionClosedOK:
-            print("Connection was closed normally.")
+            self.dn_tracer.log_error(_client.dawnet_token, {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
+                DNTag.DNMsg.value: f"Connection was closed.",
+            })
 
     def set_token(self, token):
         self.dawnet_token = token
@@ -293,7 +307,6 @@ class WebSocketClient:
             # If you need to store it as a JSON string, then use json.dumps
             # self.method_details[method_name] = json.dumps(method_detail)
 
-
     def run(self):
         asyncio.run(self.listen())
 
@@ -319,9 +332,11 @@ def register_method(name, method):
     try:
         asyncio.run(_register_method(name, method))
     except Exception as e:
-        print(f"Error registering method: {e}")
-
-    print('METHODS REGISTERED: ' + str(_client.method_registry))
+        dn_tracer = SentryEventLogger(service_name=DNSystemType.DN_CLIENT.value)
+        dn_tracer.log_error(_client.dawnet_token, {
+            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
+            DNTag.DNMsg.value: f"Error registering method: {e}",
+        })
 
 
 def set_author(author):
@@ -348,4 +363,3 @@ def connect_to_server():
 # THIS IS A SPECIAL TYPE THAT WILL BE USED TO REPRESENT FILE UPLOADS
 class DAWNetFilePath(str):
     pass
-
