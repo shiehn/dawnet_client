@@ -95,7 +95,7 @@ class SentryEventLogger:
 
         with start_transaction(op="task", name="customer.event") as transaction:
             # Set a custom UUID as a tag
-            transaction.set_tag(DNTag.DNToken.value, dn_token)
+            transaction.set_tag(DNTag.DNToken.value, str(dn_token))
             transaction.set_tag(DNTag.DNSystemType.value, self.service_name)
             transaction.set_tag(DNTag.DNMsgType.value, dn_msg_type)
 

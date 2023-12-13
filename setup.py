@@ -8,6 +8,7 @@ setup(
         'websockets',
         'nest_asyncio',
         'sentry-sdk',
+        'pydub',
     ],
     python_requires='>=3.6',
     entry_points={
