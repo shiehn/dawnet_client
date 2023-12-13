@@ -11,6 +11,7 @@ from dawnet_client.dn_tracer import DNMsgStage, DNTag, SentryEventLogger, DNSyst
 class ResultsHandler:
     def __init__(self, websocket, token):
         self.websocket = websocket
+        self.token = token
         self.message_id = None
         self.errors = []
         self.files = []
