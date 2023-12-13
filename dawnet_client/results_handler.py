@@ -4,19 +4,19 @@ import os
 
 from dawnet_client.file_uploader import FileUploader
 
-from dawnet_client.dawnet_client.dn_tracer import DNMsgStage, DNTag, SentryEventLogger, DNSystemType
+from dawnet_client.dn_tracer import DNMsgStage, DNTag, SentryEventLogger, DNSystemType
 
 
 # ResultsHandler class to handle the results
 class ResultsHandler:
     def __init__(self, websocket, token):
         self.websocket = websocket
-        self.token = token
         self.message_id = None
         self.errors = []
         self.files = []
         self.messages = []
         self.file_uploader = FileUploader()
+        self.dn_tracer = SentryEventLogger(DNSystemType.DN_CLIENT.value)
 
     def update_token(self, token):
         self.token = token
@@ -33,8 +33,7 @@ class ResultsHandler:
             self.files.append({'name': os.path.basename(file_path), 'type': file_type, 'url': file_url})
             return
         except Exception as e:
-            dn_tracer = SentryEventLogger(DNSystemType.DN_CLIENT.value)
-            dn_tracer.log_error(self.token, {
+            self.dn_tracer.log_error(self.token, {
                 DNTag.DNMsgStage.value: DNMsgStage.UPLOAD_ASSET.value,
                 DNTag.DNMsg.value: str(e),
             })
@@ -66,3 +65,8 @@ class ResultsHandler:
         }
 
         await self.websocket.send(json.dumps(send_msg))
+
+        self.dn_tracer.log_event(self.token, {
+            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_SEND_RESULTS_MSG.value,
+            DNTag.DNMsg.value: json.dumps(send_msg),
+        })
