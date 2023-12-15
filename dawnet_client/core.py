@@ -10,6 +10,9 @@ from dawnet_client.results_handler import ResultsHandler
 from dawnet_client.config import SOCKET_IP, SOCKET_PORT
 from dawnet_client.dn_tracer import SentryEventLogger, DNSystemType,DNTag, DNMsgStage
 from inspect import signature, Parameter
+import librosa
+import soundfile as sf
+from pydub import AudioSegment
 
 # Apply nest_asyncio to allow nested running of event loops
 nest_asyncio.apply()
@@ -45,6 +48,12 @@ class WebSocketClient:
         self.version = "0.0.0"
         self.logger = logging.getLogger(__name__)
         self.dn_tracer = SentryEventLogger(service_name=DNSystemType.DN_CLIENT.value)
+
+        # Default input audio settings
+        self.input_sample_rate = 41000
+        self.input_bit_depth = 16
+        self.input_channels = 2
+        self.input_format = "wav"  # "wav", "mp3", "aiff", "flac", "ogg"
 
     async def send_registered_methods_to_server(self):
         await self.connect()  # Ensure we're connected
@@ -197,6 +206,33 @@ class WebSocketClient:
             run_status.status = 'stopped'
             raise Exception("Method not registered")
 
+    def process_audio_file(self, file_path):
+        # Inspect audio file using librosa
+        y, sr = librosa.load(file_path, sr=None)  # Load audio with original sample rate
+        current_sample_rate = sr
+        current_channels = 2 if len(y.shape) > 1 else 1  # Determine number of channels
+
+        # Check if conversion is needed
+        if (current_sample_rate != self.input_sample_rate or
+                current_channels != self.input_channels):
+            # Resample audio if needed
+            if current_sample_rate != self.input_sample_rate:
+                y = librosa.resample(y, current_sample_rate, self.input_sample_rate)
+
+            # Write audio with target format and sample rate
+            output_file_path = os.path.splitext(file_path)[0] + '.' + self.input_format
+            sf.write(output_file_path, y.T if current_channels > 1 else y, self.input_sample_rate, format=self.input_format)
+
+            # Adjust channels using pydub if needed
+            if current_channels != self.input_channels:
+                audio = AudioSegment.from_file(output_file_path)
+                audio = audio.set_channels(self.input_channels)
+                audio.export(output_file_path, format=self.input_format)
+
+            return output_file_path
+        else:
+            return file_path
+
     async def download_gcp_files(self, obj, session):
         """
         Recursively search for GCP URLs in a JSON object and download the files.
@@ -214,7 +250,7 @@ class WebSocketClient:
 
     async def download_file(self, url, session):
         """
-        Download a file from a URL and save it to a temporary directory.
+        Download a file from a URL, save it to a temporary directory, and process if it's an audio file.
         """
         local_filename = url.split('/')[-1]
         local_path = os.path.join(self.temp_dir, local_filename)
@@ -222,6 +258,11 @@ class WebSocketClient:
             if response.status == 200:
                 with open(local_path, 'wb') as f:
                     f.write(await response.read())
+
+                # Check if the file is an audio file
+                if os.path.splitext(local_path)[1][1:] in ['wav', 'mp3', 'aiff', 'flac', 'ogg']:
+                    local_path = self.process_audio_file(local_path)
+
                 return local_path
             else:
                 raise Exception(f"Failed to download file: {url}")

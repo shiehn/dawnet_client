@@ -2,9 +2,9 @@
 import json
 import os
 import subprocess
-import subprocess
+import librosa
+import soundfile as sf
 from pydub import AudioSegment
-from pydub.utils import mediainfo
 
 from dawnet_client.file_uploader import FileUploader
 
@@ -50,9 +50,9 @@ class ResultsHandler:
         self.message_id = message_id
 
     async def add_file(self, file_path):
-        if not self.ffmpeg_installed:
-            self.add_error("ffmpeg not installed, cannot process audio files.")
-            return
+        # if not self.ffmpeg_installed:
+        #     self.add_error("ffmpeg not installed, cannot process audio files.")
+        #     return
 
         try:
             # Check and convert audio file if necessary
@@ -67,26 +67,28 @@ class ResultsHandler:
             self.add_error(str(e))
 
     def process_audio_file(self, file_path):
-        # Inspect audio file
-        info = mediainfo(file_path)
-        current_sample_rate = int(info['sample_rate'])
-        current_bit_depth = int(info['bits_per_sample'])
-        current_channels = int(info['channels'])
-        current_format = os.path.splitext(file_path)[1][1:]
+        # Inspect audio file using librosa
+        y, sr = librosa.load(file_path, sr=None)  # Load audio with original sample rate
+        current_sample_rate = sr
+        current_channels = 2 if len(y.shape) > 1 else 1  # Determine number of channels
 
         # Check if conversion is needed
         if (current_sample_rate != self.target_sample_rate or
-                current_bit_depth != self.target_bit_depth or
-                current_channels != self.target_channels or
-                current_format != self.target_format):
-            audio = AudioSegment.from_file(file_path, format=current_format)
-            audio = audio.set_frame_rate(self.target_sample_rate)
-            audio = audio.set_sample_width(self.target_bit_depth // 8)
-            audio = audio.set_channels(self.target_channels)
+                current_channels != self.target_channels):
+            # Resample audio if needed
+            if current_sample_rate != self.target_sample_rate:
+                y = librosa.resample(y, current_sample_rate, self.target_sample_rate)
 
-            # Determine the output file path with target format
+            # Write audio with target format and sample rate
             output_file_path = os.path.splitext(file_path)[0] + '.' + self.target_format
-            audio.export(output_file_path, format=self.target_format)
+            sf.write(output_file_path, y.T if current_channels > 1 else y, self.target_sample_rate, format=self.target_format)
+
+            # Adjust channels using pydub if needed
+            if current_channels != self.target_channels:
+                audio = AudioSegment.from_file(output_file_path)
+                audio = audio.set_channels(self.target_channels)
+                audio.export(output_file_path, format=self.target_format)
+
             return output_file_path
         else:
             return file_path
@@ -104,8 +106,6 @@ class ResultsHandler:
                 "status": 'completed',
             }
         }
-
-        print("WHATS_THE_MESSAGE: " + str(self.message_id))
 
         if self.message_id:
             data["response"]["id"] = self.message_id
