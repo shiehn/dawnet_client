@@ -6,13 +6,14 @@ import logging
 import os
 import tempfile
 import aiohttp
-from dawnet_client.results_handler import ResultsHandler
-from dawnet_client.config import SOCKET_IP, SOCKET_PORT
-from dawnet_client.dn_tracer import SentryEventLogger, DNSystemType,DNTag, DNMsgStage
+from .results_handler import ResultsHandler
+from .config import SOCKET_IP, SOCKET_PORT
+from .dn_tracer import SentryEventLogger, DNSystemType,DNTag, DNMsgStage
 from inspect import signature, Parameter
 import librosa
 import soundfile as sf
 from pydub import AudioSegment
+import shutil
 
 # Apply nest_asyncio to allow nested running of event loops
 nest_asyncio.apply()
@@ -50,7 +51,7 @@ class WebSocketClient:
         self.dn_tracer = SentryEventLogger(service_name=DNSystemType.DN_CLIENT.value)
 
         # Default input audio settings
-        self.input_sample_rate = 41000
+        self.input_sample_rate = 441000
         self.input_bit_depth = 16
         self.input_channels = 2
         self.input_format = "wav"  # "wav", "mp3", "aiff", "flac", "ogg"
@@ -207,6 +208,22 @@ class WebSocketClient:
             raise Exception("Method not registered")
 
     def process_audio_file(self, file_path):
+        # Create 'resampled' directory if it doesn't exist
+        resampled_dir = os.path.join(os.path.dirname(file_path), 'resampled')
+        if not os.path.exists(resampled_dir):
+            os.makedirs(resampled_dir)
+
+        # Set the output file path in the 'resampled' directory
+        base_name = os.path.basename(file_path)
+        output_file_path = os.path.join(resampled_dir, base_name)
+
+        # Determine the format based on file extension
+        file_extension = os.path.splitext(output_file_path)[1][1:].lower()  # Extract file extension and convert to lower case
+        if file_extension in ['aif', 'aiff']:
+            output_format = 'AIFF'
+        else:
+            output_format = file_extension
+
         # Inspect audio file using librosa
         y, sr = librosa.load(file_path, sr=None)  # Load audio with original sample rate
         current_sample_rate = sr
@@ -217,21 +234,24 @@ class WebSocketClient:
                 current_channels != self.input_channels):
             # Resample audio if needed
             if current_sample_rate != self.input_sample_rate:
-                y = librosa.resample(y, current_sample_rate, self.input_sample_rate)
+                y = librosa.resample(y, orig_sr=current_sample_rate, target_sr=self.input_sample_rate)
 
+            print("Sample rate:", self.input_sample_rate)
             # Write audio with target format and sample rate
-            output_file_path = os.path.splitext(file_path)[0] + '.' + self.input_format
-            sf.write(output_file_path, y.T if current_channels > 1 else y, self.input_sample_rate, format=self.input_format)
+            sf.write(output_file_path, y.T if current_channels > 1 else y, self.input_sample_rate, format=output_format)
 
             # Adjust channels using pydub if needed
             if current_channels != self.input_channels:
                 audio = AudioSegment.from_file(output_file_path)
                 audio = audio.set_channels(self.input_channels)
-                audio.export(output_file_path, format=self.input_format)
+                audio.export(output_file_path, format=output_format)
 
-            return output_file_path
         else:
-            return file_path
+            # If no processing is required, copy the file to the 'resampled' directory
+            shutil.copy(file_path, output_file_path)
+
+        return output_file_path
+
 
     async def download_gcp_files(self, obj, session):
         """

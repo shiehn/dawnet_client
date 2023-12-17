@@ -4,11 +4,11 @@ import os
 import subprocess
 import librosa
 import soundfile as sf
+
 from pydub import AudioSegment
 
-from dawnet_client.file_uploader import FileUploader
-
-from dawnet_client.dn_tracer import DNMsgStage, DNTag, SentryEventLogger, DNSystemType
+from .dn_tracer import SentryEventLogger, DNSystemType, DNMsgStage, DNTag
+from .file_uploader import FileUploader
 
 
 # ResultsHandler class to handle the results

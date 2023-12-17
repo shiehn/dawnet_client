@@ -1,12 +1,37 @@
 from setuptools import setup, find_packages
+import os
+import subprocess
+
+def is_ffmpeg_installed():
+    try:
+        subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except FileNotFoundError:
+        return False
+
+ffmpeg_warning_msg = """
+Warning: FFmpeg is not installed on your system, which is required for some functionalities of this package.
+Please install FFmpeg using the following instructions:
+
+- For macOS:
+  Install FFmpeg using Homebrew: `brew install ffmpeg`
+
+- For Linux (Debian/Ubuntu):
+  Install FFmpeg using apt: `sudo apt-get install ffmpeg`
+
+After installing, ensure that FFmpeg is in your PATH.
+"""
+
+if not is_ffmpeg_installed():
+    print(ffmpeg_warning_msg)
 
 setup(
     name='dawnet-client',
-    version='0.0.19',
+    version='0.0.20',
     packages=find_packages(),
     install_requires=[
         'websockets',
-        'nest_asyncio',
+        'nest-asyncio',
         'sentry-sdk',
         'pydub',
         'librosa',

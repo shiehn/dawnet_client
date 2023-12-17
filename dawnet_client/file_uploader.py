@@ -1,9 +1,7 @@
 import os
 
 from aiohttp import ClientSession
-from dawnet_client.config import API_BASE_URL
-
-from dawnet_client.dn_tracer import SentryEventLogger, DNSystemType
+from .config import API_BASE_URL
 
 
 class FileUploader:

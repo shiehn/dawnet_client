@@ -12,6 +12,13 @@ NOTE: The plugin is in an active, pre-alpha state.  It has only been tested on A
 pip install dawnet-client --upgrade
 ```
 
+## Tests
+
+from the root of the source code dir run:
+```python
+pip uninstall dawnet-client -y && pip install -e . && pytest -s
+```
+
 ## Usage
 
 This is a simple example of a DAWNet remote script created using the dawnet-client.  The script defines an arbitrary function that takes two arguments, an integer and a DAWNetFilePath.  The function is registered with the DAWNet discovery server.  The script then connects to the DAWNet discovery server and waits for a remote trigger.

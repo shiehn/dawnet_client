@@ -1,11 +1,18 @@
+
+
+
+import sys
+print("System Path")
+print(sys.path)
+
+
 import logging
 from enum import Enum
 from typing import Any, Dict
 from threading import Thread
-import sentry_sdk
-from sentry_sdk import start_transaction
 
-from dawnet_client.config import SENTRY_API_KEY
+from .config import SENTRY_API_KEY
+import sentry_sdk
 
 class DNTag(Enum):
     DNToken = "dn_token"
@@ -93,18 +100,18 @@ class SentryEventLogger:
             self._process_event(event_info)
             return
 
-        with start_transaction(op="task", name="customer.event") as transaction:
-            # Set a custom UUID as a tag
-            transaction.set_tag(DNTag.DNToken.value, str(dn_token))
-            transaction.set_tag(DNTag.DNSystemType.value, self.service_name)
-            transaction.set_tag(DNTag.DNMsgType.value, dn_msg_type)
-
-            for key, value in event_info.items():
-                transaction.set_tag(key, value)
-
-            self._process_event(event_info)
-            transaction.set_data("event_info", event_info)
-            transaction.sampled = True
+#         with start_transaction(op="task", name="customer.event") as transaction:
+#             # Set a custom UUID as a tag
+#             transaction.set_tag(DNTag.DNToken.value, str(dn_token))
+#             transaction.set_tag(DNTag.DNSystemType.value, self.service_name)
+#             transaction.set_tag(DNTag.DNMsgType.value, dn_msg_type)
+#
+#             for key, value in event_info.items():
+#                 transaction.set_tag(key, value)
+#
+#             self._process_event(event_info)
+#             transaction.set_data("event_info", event_info)
+#             transaction.sampled = True
 
     def _process_event(self, event_info: Dict[str, Any]) -> None:
         self.logger.info(f"Processing event: {event_info}")
