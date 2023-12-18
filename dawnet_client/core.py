@@ -51,10 +51,10 @@ class WebSocketClient:
         self.dn_tracer = SentryEventLogger(service_name=DNSystemType.DN_CLIENT.value)
 
         # Default input audio settings
-        self.input_sample_rate = 441000
+        self.input_sample_rate = 44100
         self.input_bit_depth = 16
         self.input_channels = 2
-        self.input_format = "wav"  # "wav", "mp3", "aiff", "flac", "ogg"
+        self.input_format = "wav"  # "wav", "mp3", "aif", "flac"
 
     async def send_registered_methods_to_server(self):
         await self.connect()  # Ensure we're connected
@@ -213,16 +213,16 @@ class WebSocketClient:
         if not os.path.exists(resampled_dir):
             os.makedirs(resampled_dir)
 
-        # Set the output file path in the 'resampled' directory
-        base_name = os.path.basename(file_path)
-        output_file_path = os.path.join(resampled_dir, base_name)
+        # Set the output file extension based on the desired input format
+        base_name = os.path.splitext(os.path.basename(file_path))[0]
+        output_file_extension = self.input_format.lower()
+        output_file_path = os.path.join(resampled_dir, f"{base_name}.{output_file_extension}")
 
-        # Determine the format based on file extension
-        file_extension = os.path.splitext(output_file_path)[1][1:].lower()  # Extract file extension and convert to lower case
-        if file_extension in ['aif', 'aiff']:
+        # Determine the format based on self.input_format
+        if self.input_format.lower() in ['aif', 'aiff']:
             output_format = 'AIFF'
         else:
-            output_format = file_extension
+            output_format = self.input_format.lower()
 
         # Inspect audio file using librosa
         y, sr = librosa.load(file_path, sr=None)  # Load audio with original sample rate
@@ -236,7 +236,6 @@ class WebSocketClient:
             if current_sample_rate != self.input_sample_rate:
                 y = librosa.resample(y, orig_sr=current_sample_rate, target_sr=self.input_sample_rate)
 
-            print("Sample rate:", self.input_sample_rate)
             # Write audio with target format and sample rate
             sf.write(output_file_path, y.T if current_channels > 1 else y, self.input_sample_rate, format=output_format)
 
@@ -414,6 +413,19 @@ def set_description(description):
 
 def set_version(version):
     _client.set_version(version)
+
+
+def set_input_target_sample_rate(sample_rate):
+    _client.input_sample_rate = sample_rate
+
+def set_input_target_bit_depth(bit_depth):
+    _client.input_bit_depth = bit_depth
+
+def set_input_target_channels(channels):
+    _client.input_channels = channels
+
+def set_input_target_format(format):
+    _client.input_format = format
 
 
 def connect_to_server():
