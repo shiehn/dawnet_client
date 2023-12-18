@@ -6,14 +6,13 @@ import logging
 import os
 import tempfile
 import aiohttp
+
+from .audio_utils import process_audio_file
 from .results_handler import ResultsHandler
 from .config import SOCKET_IP, SOCKET_PORT
 from .dn_tracer import SentryEventLogger, DNSystemType,DNTag, DNMsgStage
 from inspect import signature, Parameter
-import librosa
-import soundfile as sf
-from pydub import AudioSegment
-import shutil
+
 
 # Apply nest_asyncio to allow nested running of event loops
 nest_asyncio.apply()
@@ -207,49 +206,7 @@ class WebSocketClient:
             run_status.status = 'stopped'
             raise Exception("Method not registered")
 
-    def process_audio_file(self, file_path):
-        # Create 'resampled' directory if it doesn't exist
-        resampled_dir = os.path.join(os.path.dirname(file_path), 'resampled')
-        if not os.path.exists(resampled_dir):
-            os.makedirs(resampled_dir)
 
-        # Set the output file extension based on the desired input format
-        base_name = os.path.splitext(os.path.basename(file_path))[0]
-        output_file_extension = self.input_format.lower()
-        output_file_path = os.path.join(resampled_dir, f"{base_name}.{output_file_extension}")
-
-        # Determine the format based on self.input_format
-        if self.input_format.lower() in ['aif', 'aiff']:
-            output_format = 'AIFF'
-        else:
-            output_format = self.input_format.lower()
-
-        # Inspect audio file using librosa
-        y, sr = librosa.load(file_path, sr=None)  # Load audio with original sample rate
-        current_sample_rate = sr
-        current_channels = 2 if len(y.shape) > 1 else 1  # Determine number of channels
-
-        # Check if conversion is needed
-        if (current_sample_rate != self.input_sample_rate or
-                current_channels != self.input_channels):
-            # Resample audio if needed
-            if current_sample_rate != self.input_sample_rate:
-                y = librosa.resample(y, orig_sr=current_sample_rate, target_sr=self.input_sample_rate)
-
-            # Write audio with target format and sample rate
-            sf.write(output_file_path, y.T if current_channels > 1 else y, self.input_sample_rate, format=output_format)
-
-            # Adjust channels using pydub if needed
-            if current_channels != self.input_channels:
-                audio = AudioSegment.from_file(output_file_path)
-                audio = audio.set_channels(self.input_channels)
-                audio.export(output_file_path, format=output_format)
-
-        else:
-            # If no processing is required, copy the file to the 'resampled' directory
-            shutil.copy(file_path, output_file_path)
-
-        return output_file_path
 
 
     async def download_gcp_files(self, obj, session):
@@ -280,7 +237,8 @@ class WebSocketClient:
 
                 # Check if the file is an audio file
                 if os.path.splitext(local_path)[1][1:] in ['wav', 'mp3', 'aiff', 'flac', 'ogg']:
-                    local_path = self.process_audio_file(local_path)
+                    local_path = process_audio_file(local_path, self.input_format, self.input_sample_rate,
+                                                    self.input_bit_depth, self.input_channels)
 
                 return local_path
             else:

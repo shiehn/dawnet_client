@@ -2,11 +2,7 @@
 import json
 import os
 import subprocess
-import librosa
-import soundfile as sf
-
-from pydub import AudioSegment
-
+from .audio_utils import process_audio_file
 from .dn_tracer import SentryEventLogger, DNSystemType, DNMsgStage, DNTag
 from .file_uploader import FileUploader
 
@@ -56,7 +52,7 @@ class ResultsHandler:
 
         try:
             # Check and convert audio file if necessary
-            converted_file_path = self.process_audio_file(file_path)
+            converted_file_path = process_audio_file(file_path)
             file_url = await self.file_uploader.upload(converted_file_path, os.path.splitext(converted_file_path)[1][1:])
             self.files.append({'name': os.path.basename(converted_file_path), 'url': file_url})
         except Exception as e:
@@ -65,33 +61,6 @@ class ResultsHandler:
                 DNTag.DNMsg.value: str(e),
             })
             self.add_error(str(e))
-
-    def process_audio_file(self, file_path):
-        # Inspect audio file using librosa
-        y, sr = librosa.load(file_path, sr=None)  # Load audio with original sample rate
-        current_sample_rate = sr
-        current_channels = 2 if len(y.shape) > 1 else 1  # Determine number of channels
-
-        # Check if conversion is needed
-        if (current_sample_rate != self.target_sample_rate or
-                current_channels != self.target_channels):
-            # Resample audio if needed
-            if current_sample_rate != self.target_sample_rate:
-                y = librosa.resample(y, current_sample_rate, self.target_sample_rate)
-
-            # Write audio with target format and sample rate
-            output_file_path = os.path.splitext(file_path)[0] + '.' + self.target_format
-            sf.write(output_file_path, y.T if current_channels > 1 else y, self.target_sample_rate, format=self.target_format)
-
-            # Adjust channels using pydub if needed
-            if current_channels != self.target_channels:
-                audio = AudioSegment.from_file(output_file_path)
-                audio = audio.set_channels(self.target_channels)
-                audio.export(output_file_path, format=self.target_format)
-
-            return output_file_path
-        else:
-            return file_path
 
 
     async def add_message(self, message):
