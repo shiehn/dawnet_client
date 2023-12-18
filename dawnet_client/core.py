@@ -51,11 +51,17 @@ class WebSocketClient:
         self.logger = logging.getLogger(__name__)
         self.dn_tracer = SentryEventLogger(service_name=DNSystemType.DN_CLIENT.value)
 
-        # Default input audio settings
+        # Default input target audio settings
         self.input_sample_rate = 44100
         self.input_bit_depth = 16
         self.input_channels = 2
         self.input_format = "wav"  # "wav", "mp3", "aif", "flac"
+
+        # Default output target audio settings
+        self.output_sample_rate = 44100
+        self.output_bit_depth = 16
+        self.output_channels = 2
+        self.output_format = "wav"  # "wav", "mp3", "aif", "flac"
 
     async def send_registered_methods_to_server(self):
         await self.connect()  # Ensure we're connected
@@ -88,7 +94,14 @@ class WebSocketClient:
                 DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
                 DNTag.DNMsg.value: f"Connected to {uri}",
             })
-            self.results = ResultsHandler(self.websocket, self.dawnet_token)
+            self.results = ResultsHandler(
+                websocket=self.websocket,
+                token=self.dawnet_token,
+                target_sample_rate=self.output_sample_rate,
+                target_bit_depth=self.output_bit_depth,
+                target_channels=self.output_channels,
+                target_format=self.output_format
+            )
 
         try:
             await self.register_compute_instance()
@@ -389,8 +402,8 @@ def set_input_target_sample_rate(sample_rate: int):
         _client.input_sample_rate = sample_rate
     else:
         # Raise an error if the sample rate is not valid
-        raise ValueError(f"Invalid sample rate: '{sample_rate}'. Valid sample rates are: {', '.join(map(str, valid_sample_rates))}")
-
+        raise ValueError(
+            f"Invalid sample rate: '{sample_rate}'. Valid sample rates are: {', '.join(map(str, valid_sample_rates))}")
 
 
 def set_input_target_bit_depth(bit_depth: int):
@@ -402,8 +415,8 @@ def set_input_target_bit_depth(bit_depth: int):
         _client.input_bit_depth = bit_depth
     else:
         # Raise an error if the bit depth is not valid
-        raise ValueError(f"Invalid bit depth: '{bit_depth}'. Valid bit depths are: {', '.join(map(str, valid_bit_depths))}")
-
+        raise ValueError(
+            f"Invalid bit depth: '{bit_depth}'. Valid bit depths are: {', '.join(map(str, valid_bit_depths))}")
 
 
 def set_input_target_channels(channels: int):
@@ -415,8 +428,8 @@ def set_input_target_channels(channels: int):
         _client.input_channels = channels
     else:
         # Raise an error if the channel count is not valid
-        raise ValueError(f"Invalid channel count: '{channels}'. Valid channel counts are: {', '.join(map(str, valid_channels))}")
-
+        raise ValueError(
+            f"Invalid channel count: '{channels}'. Valid channel counts are: {', '.join(map(str, valid_channels))}")
 
 
 def set_input_target_format(format: str):
@@ -432,6 +445,43 @@ def set_input_target_format(format: str):
     else:
         # Raise an error if the format is not valid
         raise ValueError(f"Invalid format: '{format}'. Valid formats are: {', '.join(valid_formats)}")
+
+
+def set_output_target_sample_rate(sample_rate: int):
+    # Assuming the same valid sample rates as for input
+    valid_sample_rates = [22050, 32000, 44100, 48000]
+    if sample_rate in valid_sample_rates:
+        _client.output_sample_rate = sample_rate
+    else:
+        raise ValueError(f"Invalid output sample rate: '{sample_rate}'. Valid rates: {valid_sample_rates}")
+
+
+def set_output_target_bit_depth(bit_depth: int):
+    # Assuming the same valid bit depths as for input
+    valid_bit_depths = [16, 24, 32]
+    if bit_depth in valid_bit_depths:
+        _client.output_bit_depth = bit_depth
+    else:
+        raise ValueError(f"Invalid output bit depth: '{bit_depth}'. Valid depths: {valid_bit_depths}")
+
+
+def set_output_target_channels(channels: int):
+    # Assuming the same valid channel counts as for input
+    valid_channels = [1, 2]
+    if channels in valid_channels:
+        _client.output_channels = channels
+    else:
+        raise ValueError(f"Invalid output channel count: '{channels}'. Valid counts: {valid_channels}")
+
+
+def set_output_target_format(format: str):
+    # Assuming the same valid formats as for input
+    valid_formats = ["wav", "mp3", "aif", "tiff", "flac"]
+    format_lower = format.lower()
+    if format_lower in valid_formats:
+        _client.output_format = format
+    else:
+        raise ValueError(f"Invalid output format: '{format}'. Valid formats: {valid_formats}")
 
 
 def connect_to_server():

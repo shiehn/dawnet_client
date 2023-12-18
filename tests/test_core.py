@@ -11,6 +11,12 @@ class MockWebSocketClient:
         self.input_bit_depth = None
         self.input_sample_rate = None
         self.input_channels = None
+
+        self.output_sample_rate = None
+        self.output_bit_depth = None
+        self.output_channels = None
+        self.output_format = None
+
         self.dawnet_token = None
     # You might need to add mock methods here if they are called in your tests
 
@@ -94,3 +100,59 @@ def test_set_token_invalid():
     with pytest.raises(ValueError) as excinfo:
         dawnet_client.set_token(invalid_token)
     assert f"Invalid token: '{invalid_token}'" in str(excinfo.value)
+
+# Test for set_output_target_sample_rate
+@patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
+def test_set_output_target_sample_rate_valid():
+    for rate in [22050, 32000, 44100, 48000]:
+        dawnet_client.set_output_target_sample_rate(rate)
+        assert dawnet_client.core._client.output_sample_rate == rate
+
+@patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
+def test_set_output_target_sample_rate_invalid():
+    with pytest.raises(ValueError) as excinfo:
+        dawnet_client.set_output_target_sample_rate(16000)  # Assuming 16000 is an invalid sample rate
+    assert "Invalid output sample rate: '16000'. Valid rates: [22050, 32000, 44100, 48000]" in str(excinfo.value)
+
+
+# Test for set_output_target_bit_depth
+@patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
+def test_set_output_target_bit_depth_valid():
+    for depth in [16, 24, 32]:
+        dawnet_client.set_output_target_bit_depth(depth)
+        assert dawnet_client.core._client.output_bit_depth == depth
+
+@patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
+def test_set_output_target_bit_depth_invalid():
+    with pytest.raises(ValueError) as excinfo:
+        dawnet_client.set_output_target_bit_depth(8)
+    assert "Invalid output bit depth: '8'. Valid depths: [16, 24, 32]" in str(excinfo.value)
+
+
+# Test for set_output_target_channels
+@patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
+def test_set_output_target_channels_valid():
+    for channels in [1, 2]:
+        dawnet_client.set_output_target_channels(channels)
+        assert dawnet_client.core._client.output_channels == channels
+
+@patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
+def test_set_output_target_channels_invalid():
+    with pytest.raises(ValueError) as excinfo:
+        dawnet_client.set_output_target_channels(3)  # Assuming 3 is an invalid channel count
+    assert "Invalid output channel count: '3'. Valid counts: [1, 2]" in str(excinfo.value)
+
+
+
+# Test for set_output_target_format
+@patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
+def test_set_output_target_format_valid():
+    dawnet_client.set_output_target_format("mp3")
+    assert dawnet_client.core._client.output_format == "mp3"
+
+# Test for set_output_target_format
+@patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
+def test_set_output_target_format_invalid():
+    with pytest.raises(ValueError) as excinfo:
+        dawnet_client.set_output_target_format("abc")
+    assert "Invalid output format: 'abc'. Valid formats: ['wav', 'mp3', 'aif', 'tiff', 'flac']" in str(excinfo.value)

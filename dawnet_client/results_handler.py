@@ -9,7 +9,7 @@ from .file_uploader import FileUploader
 
 # ResultsHandler class to handle the results
 class ResultsHandler:
-    def __init__(self, websocket, token):
+    def __init__(self, websocket, token, target_sample_rate=41000, target_bit_depth=16, target_channels=2, target_format="wav"):
         self.websocket = websocket
         self.token = token
         self.message_id = None
@@ -23,10 +23,10 @@ class ResultsHandler:
         self.ffmpeg_installed = self.check_ffmpeg()
 
         # Default target audio settings
-        self.target_sample_rate = 41000
-        self.target_bit_depth = 16
-        self.target_channels = 2
-        self.target_format = "wav"  # "wav", "mp3", "aiff", "flac", "ogg"
+        self.target_sample_rate = target_sample_rate
+        self.target_bit_depth = target_bit_depth
+        self.target_channels = target_channels
+        self.target_format = target_format
 
     def check_ffmpeg(self):
         try:
@@ -46,13 +46,28 @@ class ResultsHandler:
         self.message_id = message_id
 
     async def add_file(self, file_path):
-        # if not self.ffmpeg_installed:
-        #     self.add_error("ffmpeg not installed, cannot process audio files.")
-        #     return
+        if not self.ffmpeg_installed:
+            error_message = ("FFmpeg is not installed, which is required for processing audio files.\n"
+                             "To install FFmpeg, follow these instructions:\n"
+                             "- On macOS: Use Homebrew by running 'brew install ffmpeg' in the terminal.\n"
+                             "- On Linux (Debian/Ubuntu): Run 'sudo apt-get install ffmpeg' in the terminal.\n"
+                             "- On Linux (Fedora): Run 'sudo dnf install ffmpeg' in the terminal.\n"
+                             "- On Linux (Arch Linux): Run 'sudo pacman -S ffmpeg' in the terminal.\n"
+                             "For other operating systems or more detailed instructions, visit the FFmpeg website: https://ffmpeg.org/download.html")
+            print(error_message) #TODO how do errors get reported to the user?
+            self.add_error(error_message)
+            return
 
         try:
             # Check and convert audio file if necessary
-            converted_file_path = process_audio_file(file_path)
+            converted_file_path = process_audio_file(
+                file_path,
+                target_format=self.target_format,
+                target_sample_rate=self.target_sample_rate,
+                target_bit_depth=self.target_bit_depth,
+                target_channels=self.target_channels
+            )
+ 
             file_url = await self.file_uploader.upload(converted_file_path, os.path.splitext(converted_file_path)[1][1:])
             self.files.append({'name': os.path.basename(converted_file_path), 'url': file_url})
         except Exception as e:
