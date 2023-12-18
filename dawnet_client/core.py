@@ -1,4 +1,6 @@
 import asyncio
+import uuid
+
 import websockets
 import nest_asyncio
 import json
@@ -10,14 +12,14 @@ import aiohttp
 from .audio_utils import process_audio_file
 from .results_handler import ResultsHandler
 from .config import SOCKET_IP, SOCKET_PORT
-from .dn_tracer import SentryEventLogger, DNSystemType,DNTag, DNMsgStage
+from .dn_tracer import SentryEventLogger, DNSystemType, DNTag, DNMsgStage
 from inspect import signature, Parameter
-
 
 # Apply nest_asyncio to allow nested running of event loops
 nest_asyncio.apply()
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 
 class RunStatus:
     def __init__(self):
@@ -206,9 +208,6 @@ class WebSocketClient:
             run_status.status = 'stopped'
             raise Exception("Method not registered")
 
-
-
-
     async def download_gcp_files(self, obj, session):
         """
         Recursively search for GCP URLs in a JSON object and download the files.
@@ -339,6 +338,14 @@ def results():
 
 # Define the functions that will interact with the WebSocketClient instance
 def set_token(token):
+    try:
+        # Check if the token is a valid UUID4
+        uuid_obj = uuid.UUID(token, version=4)
+        if uuid_obj.hex != token.replace('-', ''):
+            raise ValueError
+    except ValueError:
+        raise ValueError(f"Invalid token: '{token}'. Token must be a valid UUID4.")
+
     _client.set_token(token)
 
 
@@ -357,15 +364,15 @@ def register_method(name, method):
         })
 
 
-def set_author(author):
+def set_author(author: str):
     _client.set_author(author)
 
 
-def set_name(name):
+def set_name(name: str):
     _client.set_name(name)
 
 
-def set_description(description):
+def set_description(description: str):
     _client.set_description(description)
 
 
@@ -373,17 +380,58 @@ def set_version(version):
     _client.set_version(version)
 
 
-def set_input_target_sample_rate(sample_rate):
-    _client.input_sample_rate = sample_rate
+def set_input_target_sample_rate(sample_rate: int):
+    # List of valid sample rates
+    valid_sample_rates = [22050, 32000, 44100, 48000]
 
-def set_input_target_bit_depth(bit_depth):
-    _client.input_bit_depth = bit_depth
+    # Check if the sample rate is valid
+    if sample_rate in valid_sample_rates:
+        _client.input_sample_rate = sample_rate
+    else:
+        # Raise an error if the sample rate is not valid
+        raise ValueError(f"Invalid sample rate: '{sample_rate}'. Valid sample rates are: {', '.join(map(str, valid_sample_rates))}")
 
-def set_input_target_channels(channels):
-    _client.input_channels = channels
 
-def set_input_target_format(format):
-    _client.input_format = format
+
+def set_input_target_bit_depth(bit_depth: int):
+    # List of valid bit depths
+    valid_bit_depths = [16, 24, 32]
+
+    # Check if the bit depth is valid
+    if bit_depth in valid_bit_depths:
+        _client.input_bit_depth = bit_depth
+    else:
+        # Raise an error if the bit depth is not valid
+        raise ValueError(f"Invalid bit depth: '{bit_depth}'. Valid bit depths are: {', '.join(map(str, valid_bit_depths))}")
+
+
+
+def set_input_target_channels(channels: int):
+    # List of valid channel counts
+    valid_channels = [1, 2]
+
+    # Check if the channel count is valid
+    if channels in valid_channels:
+        _client.input_channels = channels
+    else:
+        # Raise an error if the channel count is not valid
+        raise ValueError(f"Invalid channel count: '{channels}'. Valid channel counts are: {', '.join(map(str, valid_channels))}")
+
+
+
+def set_input_target_format(format: str):
+    # List of valid formats (in lower case)
+    valid_formats = ["wav", "mp3", "aif", "tiff", "flac"]
+
+    # Convert the input format to lower case
+    format_lower = format.lower()
+
+    # Check if the format is in the list of valid formats
+    if format_lower in valid_formats:
+        _client.input_format = format_lower
+    else:
+        # Raise an error if the format is not valid
+        raise ValueError(f"Invalid format: '{format}'. Valid formats are: {', '.join(valid_formats)}")
 
 
 def connect_to_server():
