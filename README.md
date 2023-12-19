@@ -63,8 +63,26 @@ dawnet.set_name("My Remote Code")
 # The description of the remote.  This is displayed in the plugin.
 dawnet.set_description("This is not a real description.")
 # Register the method with the discovery server.
-dawnet.register_method("arbitrary_method", arbitrary_method) 
- 
+dawnet.register_method("arbitrary_method", arbitrary_method)
+
+# When a file is sent to the remote as a DAWNetFilePath, it will become available at this sample rate. 
+dawnet.set_input_target_sample_rate(44100) #supported values [22050, 32000, 44100, 48000]
+# When a file is sent to the remote as a DAWNetFilePath, it will become available at this bit rate. 
+dawnet.set_input_target_bit_depth(16) #supported values [16, 24, 32]
+# When a file is sent to the remote as a DAWNetFilePath, it will become available with this number of channels.
+dawnet.set_input_target_channels(2) #supported values [1, 2] mono/stereo respectively
+# When a file is sent to the remote as a DAWNetFilePath, it will become available in this format.
+dawnet.set_input_target_format('wav') #supported values ["wav", "mp3", "aif", "flac"]
+
+# When results are sent back to the plugin, they will be sent at this sample rate.
+dawnet.set_output_target_sample_rate(44100)
+# When results are sent back to the plugin, they will be sent at this bit rate.
+dawnet.set_output_target_bit_depth(16)
+# When results are sent back to the plugin, they will be sent with this number of channels.
+dawnet.set_output_target_channels(2)
+# When results are sent back to the plugin, they will be sent in this format.
+dawnet.set_output_target_format('wav')
+
 # This should be the last line of the script.  It connects to the discovery server and waits for a remote trigger.
 dawnet.connect_to_server()
 ```

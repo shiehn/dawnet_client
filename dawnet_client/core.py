@@ -434,7 +434,7 @@ def set_input_target_channels(channels: int):
 
 def set_input_target_format(format: str):
     # List of valid formats (in lower case)
-    valid_formats = ["wav", "mp3", "aif", "tiff", "flac"]
+    valid_formats = ["wav", "mp3", "aif", "aiff", "flac"]
 
     # Convert the input format to lower case
     format_lower = format.lower()
@@ -476,7 +476,7 @@ def set_output_target_channels(channels: int):
 
 def set_output_target_format(format: str):
     # Assuming the same valid formats as for input
-    valid_formats = ["wav", "mp3", "aif", "tiff", "flac"]
+    valid_formats = ["wav", "mp3", "aif", "aiff", "flac"]
     format_lower = format.lower()
     if format_lower in valid_formats:
         _client.output_format = format
