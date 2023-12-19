@@ -229,32 +229,48 @@ class WebSocketClient:
             for key, value in obj.items():
                 if isinstance(value, str) and value.startswith("https://storage.googleapis.com"):
                     # Download and replace the URL with a local file path
+                    print("DOWNLOAD_FILE")
                     obj[key] = await self.download_file(value, session)
                 elif isinstance(value, (dict, list)):
+                    print("DOWNLOAD_GCP_FILES")
                     await self.download_gcp_files(value, session)
         elif isinstance(obj, list):
             for item in obj:
+                print("DOWNLOAD_GCP_FILES")
                 await self.download_gcp_files(item, session)
 
     async def download_file(self, url, session):
+
+        print("STEVE_DOWNLOAD_FILE_URL: " + str(url))
+
         """
         Download a file from a URL, save it to a temporary directory, and process if it's an audio file.
         """
         local_filename = url.split('/')[-1]
         local_path = os.path.join(self.temp_dir, local_filename)
+        print("STEVE_LOCAL_PATH: " + str(local_path))
+        print("self.input_format: " + str(self.input_format))
+        print("self.input_sample_rate: " + str(self.input_sample_rate))
+        print("self.input_bit_depth: " + str(self.input_bit_depth))
+        print("self.input_channels: " + str(self.input_channels))
+
         async with session.get(url) as response:
             if response.status == 200:
                 with open(local_path, 'wb') as f:
                     f.write(await response.read())
 
                 # Check if the file is an audio file
-                if os.path.splitext(local_path)[1][1:] in ['wav', 'mp3', 'aiff', 'flac', 'ogg']:
+                if os.path.splitext(local_path)[1][1:] in ['wav', 'mp3', 'aif', 'aiff', 'flac', 'ogg']:
                     local_path = process_audio_file(local_path, self.input_format, self.input_sample_rate,
                                                     self.input_bit_depth, self.input_channels)
 
+                print("STEVE_DOWNLOAD_FILE_PROCESSED_PATH: " + str(local_path))
                 return local_path
             else:
+                print("STEVE_FAILED_TO_DOWNLOAD_FILE")
                 raise Exception(f"Failed to download file: {url}")
+
+        print("STEVE_FUNCTION_COMPLETE")
 
     async def listen(self):
         if self.dawnet_token is None:
@@ -408,7 +424,7 @@ def set_input_target_sample_rate(sample_rate: int):
 
 def set_input_target_bit_depth(bit_depth: int):
     # List of valid bit depths
-    valid_bit_depths = [16, 24, 32]
+    valid_bit_depths = [16, 24]
 
     # Check if the bit depth is valid
     if bit_depth in valid_bit_depths:
@@ -458,7 +474,7 @@ def set_output_target_sample_rate(sample_rate: int):
 
 def set_output_target_bit_depth(bit_depth: int):
     # Assuming the same valid bit depths as for input
-    valid_bit_depths = [16, 24, 32]
+    valid_bit_depths = [16, 24]
     if bit_depth in valid_bit_depths:
         _client.output_bit_depth = bit_depth
     else:

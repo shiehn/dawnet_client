@@ -67,7 +67,9 @@ class ResultsHandler:
                 target_bit_depth=self.target_bit_depth,
                 target_channels=self.target_channels
             )
- 
+
+            print("OUTPUT_FILE: " + str(converted_file_path))
+
             file_url = await self.file_uploader.upload(converted_file_path, os.path.splitext(converted_file_path)[1][1:])
             self.files.append({'name': os.path.basename(converted_file_path), 'url': file_url})
         except Exception as e:

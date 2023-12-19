@@ -10,16 +10,13 @@ from dawnet_client.core import DAWNetFilePath
 
 async def arbitrary_method(a: int, b: DAWNetFilePath):
     try:
-
         print(f"Input A: {a}")
         print(f"Input B: {b}")
-        # print(f"Input C: {c}")
-        # print(f"Input D: {d}")
 
         # DO INFERENCE SHIT HERE
 
-        await dawnet.results().add_file(b, "wav")
-        # await dawnet.results().add_file(c, "wav")
+        await dawnet.results().add_file(b)
+        # await dawnet.results().add_file(c)
         await dawnet.results().add_message("This is a message XYZ")
         await dawnet.results().send()
 
@@ -28,6 +25,15 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
         print(f"Error in arbitrary_method: {e}")
         return f"Method encountered an error: {e}"
 
+dawnet.set_input_target_format('wav')
+dawnet.set_input_target_channels(1)
+dawnet.set_input_target_sample_rate(48000)
+dawnet.set_input_target_bit_depth(16)
+
+dawnet.set_output_target_format('aif')
+dawnet.set_output_target_channels(2)
+dawnet.set_output_target_sample_rate(22050)
+dawnet.set_output_target_bit_depth(16)
 
 dawnet.set_token(token=args.token)
 dawnet.set_name("My Remote Code")

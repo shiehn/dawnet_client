@@ -51,8 +51,7 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
         await dawnet.results().send()
 
         return True
-    except Exception as e:
-        print(f"Error in arbitrary_method: {e}")
+    except Exception as e: 
         return f"Method encountered an error: {e}"
 
 

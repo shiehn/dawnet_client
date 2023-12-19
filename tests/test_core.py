@@ -44,9 +44,6 @@ def test_set_input_target_bit_depth_valid():
     dawnet_client.set_input_target_bit_depth(24)
     assert dawnet_client.core._client.input_bit_depth == 24
 
-    # Test for valid bit depth 32
-    dawnet_client.set_input_target_bit_depth(32)
-    assert dawnet_client.core._client.input_bit_depth == 32
 
 @patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
 def test_set_input_target_bit_depth_invalid():
@@ -118,7 +115,7 @@ def test_set_output_target_sample_rate_invalid():
 # Test for set_output_target_bit_depth
 @patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
 def test_set_output_target_bit_depth_valid():
-    for depth in [16, 24, 32]:
+    for depth in [16, 24]:
         dawnet_client.set_output_target_bit_depth(depth)
         assert dawnet_client.core._client.output_bit_depth == depth
 
@@ -126,7 +123,7 @@ def test_set_output_target_bit_depth_valid():
 def test_set_output_target_bit_depth_invalid():
     with pytest.raises(ValueError) as excinfo:
         dawnet_client.set_output_target_bit_depth(8)
-    assert "Invalid output bit depth: '8'. Valid depths: [16, 24, 32]" in str(excinfo.value)
+    assert "Invalid output bit depth: '8'. Valid depths: [16, 24]" in str(excinfo.value)
 
 
 # Test for set_output_target_channels
@@ -155,4 +152,4 @@ def test_set_output_target_format_valid():
 def test_set_output_target_format_invalid():
     with pytest.raises(ValueError) as excinfo:
         dawnet_client.set_output_target_format("abc")
-    assert "Invalid output format: 'abc'. Valid formats: ['wav', 'mp3', 'aif', 'tiff', 'flac']" in str(excinfo.value)
+    assert "Invalid output format: 'abc'. Valid formats: ['wav', 'mp3', 'aif', 'aiff', 'flac']" in str(excinfo.value)
