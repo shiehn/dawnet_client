@@ -44,7 +44,7 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
         # -----------------------------------------
         
         # This is how you send results back to the plugin, when processing is complete.
-        await dawnet.results().add_file(b, "wav") 
+        await dawnet.results().add_file(b) 
         # This message is displayed in the plugin.
         await dawnet.results().add_message("This is a message XYZ")
         # The send method begins the transfer of results data back to the plugin.

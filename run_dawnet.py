@@ -26,13 +26,13 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
         return f"Method encountered an error: {e}"
 
 dawnet.set_input_target_format('wav')
-dawnet.set_input_target_channels(1)
-dawnet.set_input_target_sample_rate(48000)
+dawnet.set_input_target_channels(2)
+dawnet.set_input_target_sample_rate(44100)
 dawnet.set_input_target_bit_depth(16)
 
-dawnet.set_output_target_format('aif')
+dawnet.set_output_target_format('wav')
 dawnet.set_output_target_channels(2)
-dawnet.set_output_target_sample_rate(22050)
+dawnet.set_output_target_sample_rate(44100)
 dawnet.set_output_target_bit_depth(16)
 
 dawnet.set_token(token=args.token)
