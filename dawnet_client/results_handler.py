@@ -108,3 +108,6 @@ class ResultsHandler:
             DNTag.DNMsgStage.value: DNMsgStage.CLIENT_SEND_RESULTS_MSG.value,
             DNTag.DNMsg.value: json.dumps(send_msg),
         })
+
+def handle_the_results():
+    return True
