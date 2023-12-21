@@ -361,7 +361,7 @@ class WebSocketClient:
 _client = WebSocketClient(SOCKET_IP, SOCKET_PORT)
 
 
-def results():
+def results_output():
     return _client.results
 
 
