@@ -10,7 +10,7 @@ import tempfile
 import aiohttp
 
 from .audio_utils import process_audio_file
-from .results_handler import ResultsHandler
+from .output import ResultsHandler
 from .config import SOCKET_IP, SOCKET_PORT
 from .dn_tracer import SentryEventLogger, DNSystemType, DNTag, DNMsgStage
 from inspect import signature, Parameter
