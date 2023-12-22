@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(description='Connect to DAWNet server.')
 parser.add_argument('token', help='Token for DAWNet server connection')
 args = parser.parse_args()
 
-import dawnet_client.core as dawnet
+import dawnet_client as dawnet
 from dawnet_client.core import DAWNetFilePath
 
 async def arbitrary_method(a: int, b: DAWNetFilePath):
@@ -15,10 +15,18 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
 
         # DO INFERENCE SHIT HERE
 
-        await dawnet.results().add_file(b)
+        print("STEVE: WHAT? ")
+        print("STEVE: results: " + str(dawnet.output()))
+        print("STEVE: token: " + str(dawnet.output().token))
+
+        print("STEVE: WHAT2? ")
+        print("STEVE: results2: " + str(dawnet.output()))
+        print("STEVE: token2: " + str(dawnet.output().token))
+
+        await dawnet.output().add_file(b)
         # await dawnet.results().add_file(c)
-        await dawnet.results().add_message("This is a message XYZ")
-        await dawnet.results().send()
+        await dawnet.output().add_message("This is a message XYZ")
+        await dawnet.output().send()
 
         return True
     except Exception as e:

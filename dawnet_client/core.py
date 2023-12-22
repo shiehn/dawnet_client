@@ -361,8 +361,10 @@ class WebSocketClient:
 _client = WebSocketClient(SOCKET_IP, SOCKET_PORT)
 
 
-def results_output():
+def output():
+    print("STEVE: RESULTS: CALLED")
     return _client.results
+
 
 
 # Define the functions that will interact with the WebSocketClient instance

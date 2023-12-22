@@ -47,6 +47,11 @@ class ResultsHandler:
         self.message_id = message_id
 
     async def add_file(self, file_path):
+
+        print("STEVE_ADD_FILE: token:" + str(self.token))
+        print("STEVE_ADD_FILE: message_id:" + str(self.message_id))
+        print("STEVE_ADD_FILE: target_sample_rate:" + str(self.target_sample_rate))
+
         if not self.ffmpeg_installed:
             error_message = ("FFmpeg is not installed, which is required for processing audio files.\n"
                              "To install FFmpeg, follow these instructions:\n"
@@ -85,6 +90,11 @@ class ResultsHandler:
         self.messages.append(message)
 
     async def send(self):
+
+        print("STEVE_ADD_FILE: token:" + str(self.token))
+        print("STEVE_ADD_FILE: message_id:" + str(self.message_id))
+        print("STEVE_ADD_FILE: target_sample_rate:" + str(self.target_sample_rate))
+
         data = {
             "response": {
                 "files": self.files,
