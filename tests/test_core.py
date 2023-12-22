@@ -22,7 +22,7 @@ class MockWebSocketClient:
     # You might need to add mock methods here if they are called in your tests
 
 
-# Patching the WebSocketClient class in dawnet_client.core module
+#Patching the WebSocketClient class in dawnet_client.core module
 @patch('dawnet_client.core.WebSocketClient', new=MockWebSocketClient)
 def test_set_input_target_format_valid():
     dawnet_client.set_input_target_format("mp3")
@@ -168,9 +168,3 @@ def test_set_output_target_format_invalid():
     assert "Invalid output format: 'abc'. Valid formats: ['wav', 'mp3', 'aif', 'aiff', 'flac']" in str(excinfo.value)
 
 
-def test_it_gives_me_42():
-    assert dawnet_client.utils.give_me_a_number() == 42
-
-
-def test_results():
-    assert dawnet_client.output.handle_the_results() is True

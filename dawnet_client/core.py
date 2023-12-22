@@ -9,7 +9,7 @@ import os
 import tempfile
 import aiohttp
 
-from .audio_utils import process_audio_file
+from .utils import process_audio_file
 from .output import ResultsHandler
 from .config import SOCKET_IP, SOCKET_PORT
 from .dn_tracer import SentryEventLogger, DNSystemType, DNTag, DNMsgStage
@@ -362,9 +362,7 @@ _client = WebSocketClient(SOCKET_IP, SOCKET_PORT)
 
 
 def output():
-    print("STEVE: RESULTS: CALLED")
     return _client.results
-
 
 
 # Define the functions that will interact with the WebSocketClient instance

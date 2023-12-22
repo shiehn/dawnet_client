@@ -4,7 +4,7 @@ import os
 import subprocess
 from ..dn_tracer import SentryEventLogger, DNSystemType, DNMsgStage, DNTag
 from ..file_uploader import FileUploader
-from ..audio_utils import process_audio_file
+from ..utils.audio_utils import process_audio_file
 
 
 # ResultsHandler class to handle the results

@@ -4,9 +4,7 @@ import wave
 import aifc
 
 from pydub.utils import mediainfo
-from dawnet_client.core import WebSocketClient
-from dawnet_client.audio_utils import process_audio_file
-
+from dawnet_client.utils import get_audio_length, process_audio_file
 
 def clean_up_resampled_files(file_path):
     # Check if the directory exists
@@ -21,7 +19,6 @@ def clean_up_resampled_files(file_path):
 def test_process_audio_file():
     clean_up_resampled_files(os.path.join(os.path.dirname(__file__), "assets", "resampled"))
 
-    client = WebSocketClient("localhost", 8080)  # Adjust as necessary
     test_files_dir = os.path.join(os.path.dirname(__file__), "assets")
     output_formats = ['wav', 'aif', 'aiff', 'mp3', 'flac']
     sample_rates = [22050, 32000, 44100, 48000]
@@ -71,3 +68,17 @@ def test_process_audio_file():
                                     assert actual_channels == channels, f"Channel count mismatch for format {format}: expected {channels}, got {actual_channels}"
 
     clean_up_resampled_files(os.path.join(os.path.dirname(__file__), "assets", "resampled"))
+
+
+def test_get_audio_length():
+    test_files_dir = os.path.join(os.path.dirname(__file__), "assets")
+
+    for file in os.listdir(test_files_dir):
+        if file.endswith(('.wav', '.mp3', '.aif', '.flac', '.ogg')):
+            file_path = os.path.join(test_files_dir, file)
+
+            length_float = get_audio_length(file_path)
+
+            rounded_length = round(length_float, 1)
+
+            assert rounded_length == 16.0
