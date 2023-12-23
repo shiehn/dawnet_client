@@ -48,10 +48,6 @@ class ResultsHandler:
 
     async def add_file(self, file_path):
 
-        print("STEVE_ADD_FILE: token:" + str(self.token))
-        print("STEVE_ADD_FILE: message_id:" + str(self.message_id))
-        print("STEVE_ADD_FILE: target_sample_rate:" + str(self.target_sample_rate))
-
         if not self.ffmpeg_installed:
             error_message = ("FFmpeg is not installed, which is required for processing audio files.\n"
                              "To install FFmpeg, follow these instructions:\n"
@@ -64,6 +60,7 @@ class ResultsHandler:
             self.add_error(error_message)
             return
 
+        converted_file_path = None
         try:
             # Check and convert audio file if necessary
             converted_file_path = process_audio_file(
@@ -74,14 +71,31 @@ class ResultsHandler:
                 target_channels=self.target_channels
             )
 
-            print("OUTPUT_FILE: " + str(converted_file_path))
+            self.dn_tracer.log_event(self.token, {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_UPLOAD.value,
+                DNTag.DNMsg.value: str(converted_file_path),
+            })
 
-            file_url = await self.file_uploader.upload(converted_file_path,
-                                                       os.path.splitext(converted_file_path)[1][1:])
-            self.files.append({'name': os.path.basename(converted_file_path), 'url': file_url})
         except Exception as e:
             self.dn_tracer.log_error(self.token, {
-                DNTag.DNMsgStage.value: DNMsgStage.UPLOAD_ASSET.value,
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_UPLOAD.value,
+                DNTag.DNMsg.value: str(e),
+            })
+            self.add_error(str(e))
+
+        try:
+            file_url = await self.file_uploader.upload(converted_file_path,
+                                                       os.path.splitext(converted_file_path)[1][1:])
+
+            self.files.append({'name': os.path.basename(converted_file_path), 'url': file_url})
+
+            self.dn_tracer.log_event(self.token, {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_UPLOAD_ASSET.value,
+                DNTag.DNMsg.value: file_url,
+            })
+        except Exception as e:
+            self.dn_tracer.log_error(self.token, {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_UPLOAD_ASSET.value,
                 DNTag.DNMsg.value: str(e),
             })
             self.add_error(str(e))
@@ -90,11 +104,6 @@ class ResultsHandler:
         self.messages.append(message)
 
     async def send(self):
-
-        print("STEVE_ADD_FILE: token:" + str(self.token))
-        print("STEVE_ADD_FILE: message_id:" + str(self.message_id))
-        print("STEVE_ADD_FILE: target_sample_rate:" + str(self.target_sample_rate))
-
         data = {
             "response": {
                 "files": self.files,

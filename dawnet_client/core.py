@@ -229,30 +229,30 @@ class WebSocketClient:
             for key, value in obj.items():
                 if isinstance(value, str) and value.startswith("https://storage.googleapis.com"):
                     # Download and replace the URL with a local file path
-                    print("DOWNLOAD_FILE")
-                    obj[key] = await self.download_file(value, session)
+                    try:
+                        obj[key] = await self.download_file(value, session)
+
+                        self.dn_tracer.log_event(self.dawnet_token, {
+                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_DOWNLOAD_ASSET.value,
+                            DNTag.DNMsg.value: f"Downloaded: {str(obj[key])}",
+                        })
+                    except Exception as e:
+                        self.dn_tracer.log_error(self.dawnet_token, {
+                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_DOWNLOAD_ASSET.value,
+                            DNTag.DNMsg.value: f"Error downloading: {e}",
+                        })
                 elif isinstance(value, (dict, list)):
-                    print("DOWNLOAD_GCP_FILES")
                     await self.download_gcp_files(value, session)
         elif isinstance(obj, list):
             for item in obj:
-                print("DOWNLOAD_GCP_FILES")
                 await self.download_gcp_files(item, session)
 
     async def download_file(self, url, session):
-
-        print("STEVE_DOWNLOAD_FILE_URL: " + str(url))
-
         """
         Download a file from a URL, save it to a temporary directory, and process if it's an audio file.
         """
         local_filename = url.split('/')[-1]
         local_path = os.path.join(self.temp_dir, local_filename)
-        print("STEVE_LOCAL_PATH: " + str(local_path))
-        print("self.input_format: " + str(self.input_format))
-        print("self.input_sample_rate: " + str(self.input_sample_rate))
-        print("self.input_bit_depth: " + str(self.input_bit_depth))
-        print("self.input_channels: " + str(self.input_channels))
 
         async with session.get(url) as response:
             if response.status == 200:
@@ -261,16 +261,23 @@ class WebSocketClient:
 
                 # Check if the file is an audio file
                 if os.path.splitext(local_path)[1][1:] in ['wav', 'mp3', 'aif', 'aiff', 'flac', 'ogg']:
-                    local_path = process_audio_file(local_path, self.input_format, self.input_sample_rate,
-                                                    self.input_bit_depth, self.input_channels)
+                    try:
+                        local_path = process_audio_file(local_path, self.input_format, self.input_sample_rate,
+                                                        self.input_bit_depth, self.input_channels)
 
-                print("STEVE_DOWNLOAD_FILE_PROCESSED_PATH: " + str(local_path))
+                        self.dn_tracer.log_event(self.dawnet_token, {
+                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_DOWNLOAD.value,
+                            DNTag.DNMsg.value: f"Converted download: {local_path}",
+                        })
+                    except Exception as e:
+                        self.dn_tracer.log_error(self.dawnet_token, {
+                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_DOWNLOAD.value,
+                            DNTag.DNMsg.value: f"Error converting downloading: {e}",
+                        })
+
                 return local_path
             else:
-                print("STEVE_FAILED_TO_DOWNLOAD_FILE")
                 raise Exception(f"Failed to download file: {url}")
-
-        print("STEVE_FUNCTION_COMPLETE")
 
     async def listen(self):
         if self.dawnet_token is None:

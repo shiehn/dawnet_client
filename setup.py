@@ -27,7 +27,7 @@ if not is_ffmpeg_installed():
 
 setup(
     name='dawnet-client',
-    version='0.0.21',
+    version='0.0.22',
     packages=find_packages(),
     install_requires=[
         'websockets',
