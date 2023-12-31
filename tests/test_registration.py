@@ -18,7 +18,7 @@ async def test_register_method_one():
     client.set_token(str(uuid.uuid4()))
 
     # EXECUTE
-    await client.register_method('example_method_one', example_method_one)
+    await client.register_method(example_method_one)
 
     # ASSERTS
     client.connect.assert_called_once()
@@ -40,7 +40,7 @@ async def test_register_method_one_defaults():
     client.set_token(str(uuid.uuid4()))
 
     # EXECUTE
-    await client.register_method('example_method_one_defaults', example_method_one_defaults)
+    await client.register_method(example_method_one_defaults)
 
     # ASSERTS
     client.connect.assert_called_once()
@@ -63,7 +63,7 @@ async def test_method_one_partial_defaults():
     client.set_token(str(uuid.uuid4()))
 
     # EXECUTE
-    await client.register_method('example_method_one_partial_defaults', example_method_one_partial_defaults)
+    await client.register_method(example_method_one_partial_defaults)
 
     # ASSERTS
     client.connect.assert_called_once()
@@ -87,7 +87,7 @@ async def test_register_method_one_with_decorators():
     client.set_token(str(uuid.uuid4()))
 
     # EXECUTE
-    await client.register_method('example_method_one_with_decorators', example_method_one_with_decorators)
+    await client.register_method(example_method_one_with_decorators)
 
     # ASSERTS
     client.connect.assert_called_once()
@@ -112,7 +112,7 @@ async def test_register_method_one_with_multiple_decorators():
     client.set_token(str(uuid.uuid4()))
 
     # EXECUTE
-    await client.register_method('example_method_one_with_multiple_decorators', example_method_one_with_multiple_decorators)
+    await client.register_method(example_method_one_with_multiple_decorators)
 
     # ASSERTS
     client.connect.assert_called_once()
@@ -137,7 +137,7 @@ async def test_register_method_one_with_unsupported_decorators():
 
     # EXECUTE and ASSERT
     with pytest.raises(ValueError) as exc_info:
-        await client.register_method('example_method_one_with_unsupported_decorators', example_method_one_with_unsupported_decorators)
+        await client.register_method(example_method_one_with_unsupported_decorators)
 
     assert "Unsupported UI component" in str(exc_info.value)
 
@@ -155,7 +155,7 @@ async def test_register_method_one_with_unsupported_param():
 
     # EXECUTE and ASSERT
     with pytest.raises(ValueError) as exc_info:
-        await client.register_method('example_method_one_with_unsupported_param', example_method_one_with_unsupported_param)
+        await client.register_method(example_method_one_with_unsupported_param)
 
     assert "Unsupported UI param" in str(exc_info.value)
 
@@ -173,7 +173,7 @@ async def test_register_method_one_missing_required_param():
 
     # EXECUTE and ASSERT
     with pytest.raises(ValueError) as exc_info:
-        await client.register_method('example_method_one_missing_required_param', example_method_one_missing_required_param)
+        await client.register_method(example_method_one_missing_required_param)
 
     assert  "Missing required param(s)" in str(exc_info.value)
 
@@ -190,7 +190,7 @@ async def test_register_method_example_method_multichoice():
     client.set_token(str(uuid.uuid4()))
 
     # EXECUTE
-    await client.register_method('example_method_multichoice', example_method_multichoice)
+    await client.register_method(example_method_multichoice)
 
     # ASSERTS
     client.connect.assert_called_once()

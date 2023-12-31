@@ -132,7 +132,7 @@ class WebSocketClient:
         await self.websocket.send(json.dumps(register_compute_instance_msg))
 
 
-    async def register_method(self, name: str, method):
+    async def register_method(self, method):
         if self.dawnet_token is None:
             raise Exception("Token not set. Please call set_token(token) before registering a method.")
 
@@ -140,6 +140,9 @@ class WebSocketClient:
             raise ValueError("The method must be asynchronous (async).")
 
         await self.connect()  # Ensure we're connected
+
+        # Extract the method name
+        method_name = method.__name__
 
         sig = signature(method)
         params = []
@@ -191,11 +194,9 @@ class WebSocketClient:
                 if 'ui_component' in ui_param_info:
                     # Normalize the UI component name to lower case
                     ui_component = ui_param_info['ui_component'].lower()
-                    print("ui_component", ui_component)
 
                     # Check if all required parameters for the UI component are present
                     required_params = ui_component_requirements.get(ui_component, set())
-                    print("required_params", str(required_params))
                     missing_params = required_params - set(key.lower() for key in ui_param_info.keys())
                     if missing_params:
                         raise ValueError(f"Missing required param(s) {missing_params} for UI component '{ui_component}' in parameter '{param.name}'.")
@@ -220,21 +221,21 @@ class WebSocketClient:
         # Create the JSON payload
         # Store method details without sending to the server
         method_details = {
-            "method_name": name,
+            "method_name": method_name,
             "params": params,
             "author": self.author,
             "name": self.name,
             "description": self.description,
             "version": self.version
         }
-        self.method_details[name] = method_details
+        self.method_details[method_name] = method_details
 
         # Update registry with the latest method
-        self.method_registry = {name: method}
+        self.method_registry = {method_name: method}
 
         self.dn_tracer.log_event(self.dawnet_token, {
             DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
-            DNTag.DNMsg.value: f"Registered method: {name}",
+            DNTag.DNMsg.value: f"Registered method: {method_name}",
         })
 
 
