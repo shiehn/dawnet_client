@@ -19,7 +19,7 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
         # await dawnet.results().add_file(c)
         await dawnet.output().add_message("This is a message XYZ")
         await dawnet.output().send()
- 
+
         return True
     except Exception as e:
         print(f"Error in arbitrary_method: {e}")

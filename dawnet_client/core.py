@@ -145,7 +145,13 @@ class WebSocketClient:
         params = []
         param_names = set()
         supported_types = {'int', 'float', 'str', 'DAWNetFilePath'}
-        supported_ui_components = {'DAWNetNumberSlider', 'DAWNetFilePathPicker', 'DAWNetStringInput'}  # Define supported UI components here
+        supported_ui_param_keys = {'min', 'max', 'step', 'default', 'ui_component', 'options'}
+        supported_ui_components = {'DAWNetNumberSlider', 'DAWNetMultiChoice'}  # Define supported UI components here
+        ui_component_requirements = {
+            'dawnetnumberslider': {'min', 'max', 'step', 'default'},
+            'dawnetmultichoice': {'options', 'default'},
+            # Add other UI components and their required params here
+        }
         max_param_count = 12
         max_param_name_length = 36
 
@@ -177,14 +183,29 @@ class WebSocketClient:
             if hasattr(method, '_ui_params') and param.name in method._ui_params:
                 ui_param_info = method._ui_params[param.name]
 
-                # Handle UI component type
-                ui_component = ui_param_info.get('ui_component')
-                if ui_component and ui_component.lower() not in {comp.lower() for comp in supported_ui_components}:
-                    raise ValueError(f"Unsupported UI component '{ui_component}' for parameter '{param.name}'.")
-                ui_component_details["ui_component"] = ui_component
+                # Check for unsupported UI param keys
+                for key in ui_param_info.keys():
+                    if key not in supported_ui_param_keys:
+                        raise ValueError(f"Unsupported UI param '{key}' for parameter '{param.name}'.")
 
-                # Handle other UI component details, excluding 'default'
-                ui_component_details.update({k: v for k, v in ui_param_info.items() if k != 'default'})
+                if 'ui_component' in ui_param_info:
+                    # Normalize the UI component name to lower case
+                    ui_component = ui_param_info['ui_component'].lower()
+                    print("ui_component", ui_component)
+
+                    # Check if all required parameters for the UI component are present
+                    required_params = ui_component_requirements.get(ui_component, set())
+                    print("required_params", str(required_params))
+                    missing_params = required_params - set(key.lower() for key in ui_param_info.keys())
+                    if missing_params:
+                        raise ValueError(f"Missing required param(s) {missing_params} for UI component '{ui_component}' in parameter '{param.name}'.")
+
+                    if ui_component and ui_component.lower() not in {comp.lower() for comp in supported_ui_components}:
+                        raise ValueError(f"Unsupported UI component '{ui_component}' for parameter '{param.name}'.")
+                    ui_component_details["ui_component"] = ui_component
+
+                    # Handle other UI component details, excluding 'default'
+                    ui_component_details.update({k: v for k, v in ui_param_info.items() if k != 'default'})
 
                 # Override default value if specified in decorator
                 if 'default' in ui_param_info:
