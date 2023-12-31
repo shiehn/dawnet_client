@@ -63,6 +63,10 @@ class WebSocketClient:
         self.output_channels = 2
         self.output_format = "wav"  # "wav", "mp3", "aif", "flac"
 
+        # DAW SESSION INFO
+        self.daw_bpm = 0
+        self.daw_sample_rate = 0
+
     async def send_registered_methods_to_server(self):
         await self.connect()  # Ensure we're connected
 
@@ -127,6 +131,7 @@ class WebSocketClient:
         # Send the registration message to the server
         await self.websocket.send(json.dumps(register_compute_instance_msg))
 
+
     async def register_method(self, name: str, method):
         if self.dawnet_token is None:
             raise Exception("Token not set. Please call set_token(token) before registering a method.")
@@ -140,6 +145,7 @@ class WebSocketClient:
         params = []
         param_names = set()
         supported_types = {'int', 'float', 'str', 'DAWNetFilePath'}
+        supported_ui_components = {'DAWNetNumberSlider', 'DAWNetFilePathPicker', 'DAWNetStringInput'}  # Define supported UI components here
         max_param_count = 12
         max_param_name_length = 36
 
@@ -161,27 +167,55 @@ class WebSocketClient:
             if param_type_name not in supported_types:
                 raise ValueError(f"Unsupported type '{param_type_name}' for parameter '{param.name}'.")
 
-            params.append({"name": param.name, "type": param_type_name, "default_value": None})
+            # Check for default value from signature
+            default_value = None if param.default is Parameter.empty else param.default
 
-            # Create the JSON payload
-            # Store method details without sending to the server
-            method_details = {
-                "method_name": name,
-                "params": params,
-                "author": self.author,
-                "name": self.name,
-                "description": self.description,
-                "version": self.version
-            }
-            self.method_details[name] = method_details
+            # Initialize UI component details
+            ui_component_details = {'ui_component': None}
 
-            # Update registry with the latest method
-            self.method_registry = {name: method}
+            # Check for UI component and overrides from decorator
+            if hasattr(method, '_ui_params') and param.name in method._ui_params:
+                ui_param_info = method._ui_params[param.name]
 
-            self.dn_tracer.log_event(self.dawnet_token, {
-                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
-                DNTag.DNMsg.value: f"Registered method: {name}",
-            })
+                # Handle UI component type
+                ui_component = ui_param_info.get('ui_component')
+                if ui_component and ui_component.lower() not in {comp.lower() for comp in supported_ui_components}:
+                    raise ValueError(f"Unsupported UI component '{ui_component}' for parameter '{param.name}'.")
+                ui_component_details["ui_component"] = ui_component
+
+                # Handle other UI component details, excluding 'default'
+                ui_component_details.update({k: v for k, v in ui_param_info.items() if k != 'default'})
+
+                # Override default value if specified in decorator
+                if 'default' in ui_param_info:
+                    default_value = ui_param_info['default']
+
+            # Merge parameter information with UI component details
+            param_info = {"name": param.name, "type": param_type_name, "default_value": default_value}
+            param_info.update(ui_component_details)
+
+            params.append(param_info)
+
+        # Create the JSON payload
+        # Store method details without sending to the server
+        method_details = {
+            "method_name": name,
+            "params": params,
+            "author": self.author,
+            "name": self.name,
+            "description": self.description,
+            "version": self.version
+        }
+        self.method_details[name] = method_details
+
+        # Update registry with the latest method
+        self.method_registry = {name: method}
+
+        self.dn_tracer.log_event(self.dawnet_token, {
+            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
+            DNTag.DNMsg.value: f"Registered method: {name}",
+        })
+
 
     async def run_method(self, name, **kwargs):
         run_status.status = 'running'
@@ -313,6 +347,9 @@ class WebSocketClient:
                         else:
                             self.message_id = msg['message_id']
                             self.results.set_message_id(self.message_id)
+                            self.daw_bpm = msg['bpm']
+                            self.daw_sample_rate = msg['sample_rate']
+
                             data = msg['data']
                             method_name = data['method_name']
                             # Extract 'value' for each parameter to build kwargs
@@ -505,6 +542,14 @@ def set_output_target_format(format: str):
         _client.output_format = format
     else:
         raise ValueError(f"Invalid output format: '{format}'. Valid formats: {valid_formats}")
+
+
+def get_daw_bpm():
+    return _client.daw_bpm
+
+
+def get_daw_sample_rate():
+    return _client.daw_sample_rate
 
 
 def connect_to_server():

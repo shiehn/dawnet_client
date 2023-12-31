@@ -5,3 +5,4 @@ from .core import connect_to_server, register_method, set_token, set_author, set
 from .dn_tracer import SentryEventLogger, DNSystemType, DNMsgType, DNMsgStage, DNTag
 from . import utils
 from . import output
+from .decorators import ui_param

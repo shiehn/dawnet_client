@@ -35,6 +35,7 @@ setup(
         'sentry-sdk',
         'pydub',
         'librosa',
+        'pytest-asyncio',
     ],
     python_requires='>=3.6',
     entry_points={

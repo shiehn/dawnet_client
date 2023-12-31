@@ -16,7 +16,7 @@ pip install dawnet-client --upgrade
 
 from the root of the source code dir run:
 ```python
-pip uninstall dawnet-client -y && pip install -e . && pytest -s
+pip uninstall dawnet-client -y & pip install -e . & pytest -s
 ```
 
 ## Usage

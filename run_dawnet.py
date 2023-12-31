@@ -15,19 +15,11 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
 
         # DO INFERENCE SHIT HERE
 
-        print("STEVE: WHAT? ")
-        print("STEVE: results: " + str(dawnet.output()))
-        print("STEVE: token: " + str(dawnet.output().token))
-
-        print("STEVE: WHAT2? ")
-        print("STEVE: results2: " + str(dawnet.output()))
-        print("STEVE: token2: " + str(dawnet.output().token))
-
         await dawnet.output().add_file(b)
         # await dawnet.results().add_file(c)
         await dawnet.output().add_message("This is a message XYZ")
         await dawnet.output().send()
-
+ 
         return True
     except Exception as e:
         print(f"Error in arbitrary_method: {e}")

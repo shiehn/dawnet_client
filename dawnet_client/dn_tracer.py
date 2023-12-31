@@ -2,10 +2,6 @@
 
 
 import sys
-print("System Path")
-print(sys.path)
-
-
 import logging
 from enum import Enum
 from typing import Any, Dict
@@ -91,17 +87,18 @@ class SentryEventLogger:
         self.logger = logging.getLogger(service_name)
 
     def log_event(self, dn_token: str, event_info: Dict[str, Any]) -> None:
+        print("LOG_EVENT:")
         thread = Thread(target=self._handle_event, args=(dn_token, DNMsgType.DN_EVENT.value, event_info))
         thread.start()
 
     def log_error(self, dn_token: str, event_info: Dict[str, Any]) -> None:
+        print("LOG_ERROR:")
         thread = Thread(target=self._handle_event, args=(dn_token, DNMsgType.DN_ERROR.value, event_info))
         thread.start()
 
     def _handle_event(self, dn_token: str, dn_msg_type: str, event_info: Dict[str, Any]) -> None:
-        if dn_token is None or dn_token == "":
-            self._process_event(event_info)
-            return
+        self._process_event(event_info)
+        return
 
 #         with start_transaction(op="task", name="customer.event") as transaction:
 #             # Set a custom UUID as a tag
