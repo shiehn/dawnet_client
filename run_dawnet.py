@@ -1,6 +1,8 @@
 import argparse
 import time
 
+from dawnet_client import ui_param
+
 parser = argparse.ArgumentParser(description='Connect to DAWNet server.')
 parser.add_argument('token', help='Token for DAWNet server connection')
 args = parser.parse_args()
@@ -8,10 +10,13 @@ args = parser.parse_args()
 import dawnet_client as dawnet
 from dawnet_client.core import DAWNetFilePath
 
-async def arbitrary_method(a: int, b: DAWNetFilePath):
+@ui_param('a', 'DAWNetNumberSlider', min=0, max=10, step=1, default=5)
+@ui_param('c', 'DAWNetMultiChoice', options=['cherries', 'oranges', 'grapes'], default='grapes')
+async def arbitrary_method(a: int, b: DAWNetFilePath, c: str):
     try:
         print(f"Input A: {a}")
         print(f"Input B: {b}")
+        print(f"Input C: {c}")
 
         # DO INFERENCE SHIT HERE
 
@@ -38,7 +43,7 @@ dawnet.set_output_target_bit_depth(16)
 dawnet.set_token(token=args.token)
 dawnet.set_name("My Remote Code")
 dawnet.set_description("This is not a real description.")
-dawnet.register_method("arbitrary_method", arbitrary_method)
+dawnet.register_method(arbitrary_method)
 
 
 print("REGISTERED TOKEN & " + str(arbitrary_method))

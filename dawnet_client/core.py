@@ -444,13 +444,13 @@ def set_token(token):
     _client.set_token(token)
 
 
-async def _register_method(name, method):
-    await _client.register_method(name, method)
+async def _register_method(method):
+    await _client.register_method(method)
 
 
-def register_method(name, method):
+def register_method(method):
     try:
-        asyncio.run(_register_method(name, method))
+        asyncio.run(_register_method(method))
     except Exception as e:
         dn_tracer = SentryEventLogger(service_name=DNSystemType.DN_CLIENT.value)
         dn_tracer.log_error(_client.dawnet_token, {
