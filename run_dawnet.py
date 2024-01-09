@@ -11,12 +11,11 @@ import dawnet_client as dawnet
 from dawnet_client.core import DAWNetFilePath
 
 @ui_param('a', 'DAWNetNumberSlider', min=0, max=10, step=1, default=5)
-@ui_param('c', 'DAWNetMultiChoice', options=['cherries', 'oranges', 'grapes'], default='grapes')
-async def arbitrary_method(a: int, b: DAWNetFilePath, c: str):
+#@ui_param('c', 'DAWNetMultiChoice', options=['cherries', 'oranges', 'grapes'], default='grapes')
+async def arbitrary_method(a: int, b: DAWNetFilePath):
     try:
         print(f"Input A: {a}")
         print(f"Input B: {b}")
-        print(f"Input C: {c}")
 
         # DO INFERENCE SHIT HERE
 

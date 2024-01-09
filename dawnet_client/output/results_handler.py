@@ -103,6 +103,13 @@ class ResultsHandler:
     async def add_message(self, message):
         self.messages.append(message)
 
+    def clear_outputs(self):
+        """Clears the output attributes of the ResultsHandler instance."""
+        self.message_id = None
+        self.errors = []
+        self.files = []
+        self.messages = []
+
     async def send(self):
         data = {
             "response": {

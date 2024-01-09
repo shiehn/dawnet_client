@@ -131,7 +131,6 @@ class WebSocketClient:
         # Send the registration message to the server
         await self.websocket.send(json.dumps(register_compute_instance_msg))
 
-
     async def register_method(self, method):
         if self.dawnet_token is None:
             raise Exception("Token not set. Please call set_token(token) before registering a method.")
@@ -199,7 +198,8 @@ class WebSocketClient:
                     required_params = ui_component_requirements.get(ui_component, set())
                     missing_params = required_params - set(key.lower() for key in ui_param_info.keys())
                     if missing_params:
-                        raise ValueError(f"Missing required param(s) {missing_params} for UI component '{ui_component}' in parameter '{param.name}'.")
+                        raise ValueError(
+                            f"Missing required param(s) {missing_params} for UI component '{ui_component}' in parameter '{param.name}'.")
 
                     if ui_component and ui_component.lower() not in {comp.lower() for comp in supported_ui_components}:
                         raise ValueError(f"Unsupported UI component '{ui_component}' for parameter '{param.name}'.")
@@ -237,7 +237,6 @@ class WebSocketClient:
             DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
             DNTag.DNMsg.value: f"Registered method: {method_name}",
         })
-
 
     async def run_method(self, name, **kwargs):
         run_status.status = 'running'
@@ -367,6 +366,7 @@ class WebSocketClient:
                         if run_status.status == "running":
                             await self.websocket.send("Plugin already started!")
                         else:
+                            self.results.clear_outputs()  # Clear previous outputs before running the method
                             self.message_id = msg['message_id']
                             self.results.set_message_id(self.message_id)
                             self.daw_bpm = msg['bpm']

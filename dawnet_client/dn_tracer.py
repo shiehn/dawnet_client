@@ -87,12 +87,10 @@ class SentryEventLogger:
         self.logger = logging.getLogger(service_name)
 
     def log_event(self, dn_token: str, event_info: Dict[str, Any]) -> None:
-        print("LOG_EVENT:")
         thread = Thread(target=self._handle_event, args=(dn_token, DNMsgType.DN_EVENT.value, event_info))
         thread.start()
 
     def log_error(self, dn_token: str, event_info: Dict[str, Any]) -> None:
-        print("LOG_ERROR:")
         thread = Thread(target=self._handle_event, args=(dn_token, DNMsgType.DN_ERROR.value, event_info))
         thread.start()
 
