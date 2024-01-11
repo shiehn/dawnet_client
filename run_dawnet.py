@@ -18,7 +18,7 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
         print(f"Input B: {b}")
 
         # DO INFERENCE SHIT HERE
- 
+
         await dawnet.output().add_file(b)
         await dawnet.output().add_message("This is a message XYZ")
     except Exception as e:

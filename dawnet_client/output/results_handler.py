@@ -16,6 +16,7 @@ class ResultsHandler:
         self.message_id = None
         self.errors = []
         self.files = []
+        self.logs = ""
         self.messages = []
         self.file_uploader = FileUploader()
         self.dn_tracer = SentryEventLogger(DNSystemType.DN_CLIENT.value)
@@ -107,11 +108,16 @@ class ResultsHandler:
         self.messages.append(message)
         return True
 
+    async def add_log(self, log):
+        self.logs += log
+        return True
+
     def clear_outputs(self):
         """Clears the output attributes of the ResultsHandler instance."""
         self.message_id = None
         self.errors = []
         self.files = []
+        self.logs = ""
         self.messages = []
 
     async def send(self):
@@ -124,6 +130,7 @@ class ResultsHandler:
             "response": {
                 "files": self.files,
                 "error": ", ".join(self.errors) if self.errors else None,
+                "logs": self.logs,
                 "message": ", ".join(self.messages) if self.messages else None,
                 "status": status,
             }

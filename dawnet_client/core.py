@@ -1,4 +1,6 @@
 import asyncio
+import io
+import sys
 import uuid
 
 import websockets
@@ -246,7 +248,38 @@ class WebSocketClient:
                 print("IS COROUTINE")
                 # If the method is a coroutine, await it directly
                 try:
+                    # Capture stdout and stderr
+                    stdout_buffer = io.StringIO()
+                    stderr_buffer = io.StringIO()
+                    sys.stdout = stdout_buffer
+                    sys.stderr = stderr_buffer
+
                     await method(**kwargs)
+
+                    # Restore the original stdout and stderr
+                    sys.stdout = sys.__stdout__
+                    sys.stderr = sys.__stderr__
+
+                    # Get the captured output as strings
+                    stdout_output = stdout_buffer.getvalue()
+                    stderr_output = stderr_buffer.getvalue()
+
+                    # Now you can do whatever you want with the output
+                    print("Captured stdout:")
+                    print(stdout_output)
+                    print("Captured stderr:")
+                    print(stderr_output)
+
+                    await self.results.add_log(stdout_output)
+                    await self.results.add_log(stderr_output)
+
+                    # If you want to save the output to a file, you can do so here
+                    # with open("stdout.log", "w") as stdout_file:
+                    #     stdout_file.write(stdout_output)
+                    #
+                    # with open("stderr.log", "w") as stderr_file:
+                    #     stderr_file.write(stderr_output)
+
                     # if self.results.errors is None:
                     #     self.results.add_error("ENCOUNTERED AN ERROR")
 
@@ -283,6 +316,7 @@ class WebSocketClient:
                 #         DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
                 #         DNTag.DNMsg.value: f"Error running method: {e}",
                 #     })
+
             run_status.status = 'stopped'
             return True
         else:
