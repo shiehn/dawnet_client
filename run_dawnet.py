@@ -18,16 +18,13 @@ async def arbitrary_method(a: int, b: DAWNetFilePath):
         print(f"Input B: {b}")
 
         # DO INFERENCE SHIT HERE
-
+ 
         await dawnet.output().add_file(b)
-        # await dawnet.results().add_file(c)
         await dawnet.output().add_message("This is a message XYZ")
-        await dawnet.output().send()
-
-        return True
     except Exception as e:
         print(f"Error in arbitrary_method: {e}")
-        return f"Method encountered an error: {e}"
+        await dawnet.output().add_error(f"Error in arbitrary_method: {e}")
+
 
 dawnet.set_input_target_format('wav')
 dawnet.set_input_target_channels(2)

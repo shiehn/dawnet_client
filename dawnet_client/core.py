@@ -243,35 +243,48 @@ class WebSocketClient:
         if name in self.method_registry:
             method = self.method_registry[name]
             if asyncio.iscoroutinefunction(method):
+                print("IS COROUTINE")
                 # If the method is a coroutine, await it directly
                 try:
-                    result = await method(**kwargs)
+                    await method(**kwargs)
+                    # if self.results.errors is None:
+                    #     self.results.add_error("ENCOUNTERED AN ERROR")
+
+                    print("ERRORS: " + str(self.results.errors))
+
+                    await self.results.send()
+
                     self.dn_tracer.log_event(self.dawnet_token, {
                         DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
                         DNTag.DNMsg.value: f"Ran method: {name}",
                     })
                 except Exception as e:
+                    await self.results.add_error("ERROR:" + str(e))
+                    print("IM IN THE EXCEPTION")
+                    await self.results.send()
+
                     self.dn_tracer.log_error(self.dawnet_token, {
                         DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
                         DNTag.DNMsg.value: f"Error running method: {e}",
                     })
             else:
+                print("IS NOT COROUTINE")
                 # If the method is not a coroutine, run it in an executor
-                loop = asyncio.get_running_loop()
-                try:
-                    func = lambda: method(**kwargs)
-                    result = await loop.run_in_executor(None, func)
-                    self.dn_tracer.log_event(self.dawnet_token, {
-                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
-                        DNTag.DNMsg.value: f"Ran method: {name}",
-                    })
-                except Exception as e:
-                    self.dn_tracer.log_error(self.dawnet_token, {
-                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
-                        DNTag.DNMsg.value: f"Error running method: {e}",
-                    })
+                # loop = asyncio.get_running_loop()
+                # try:
+                #     func = lambda: method(**kwargs)
+                #     result = await loop.run_in_executor(None, func)
+                #     self.dn_tracer.log_event(self.dawnet_token, {
+                #         DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
+                #         DNTag.DNMsg.value: f"Ran method: {name}",
+                #     })
+                # except Exception as e:
+                #     self.dn_tracer.log_error(self.dawnet_token, {
+                #         DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
+                #         DNTag.DNMsg.value: f"Error running method: {e}",
+                #     })
             run_status.status = 'stopped'
-            return result
+            return True
         else:
             run_status.status = 'stopped'
             raise Exception("Method not registered")

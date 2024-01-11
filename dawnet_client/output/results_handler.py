@@ -40,8 +40,9 @@ class ResultsHandler:
     def update_token(self, token):
         self.token = token
 
-    def add_error(self, error):
+    async def add_error(self, error):
         self.errors.append(error)
+        return True
 
     def set_message_id(self, message_id):
         self.message_id = message_id
@@ -58,7 +59,7 @@ class ResultsHandler:
                              "For other operating systems or more detailed instructions, visit the FFmpeg website: https://ffmpeg.org/download.html")
             print(error_message)  # TODO how do errors get reported to the user?
             self.add_error(error_message)
-            return
+            return False
 
         converted_file_path = None
         try:
@@ -100,8 +101,11 @@ class ResultsHandler:
             })
             self.add_error(str(e))
 
+        return True
+
     async def add_message(self, message):
         self.messages.append(message)
+        return True
 
     def clear_outputs(self):
         """Clears the output attributes of the ResultsHandler instance."""
@@ -111,12 +115,17 @@ class ResultsHandler:
         self.messages = []
 
     async def send(self):
+
+        status = 'completed' if not self.errors else 'error'
+
+        print("STATUS: " + status)
+
         data = {
             "response": {
                 "files": self.files,
                 "error": ", ".join(self.errors) if self.errors else None,
                 "message": ", ".join(self.messages) if self.messages else None,
-                "status": 'completed',
+                "status": status,
             }
         }
 
