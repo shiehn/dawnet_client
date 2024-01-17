@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
+
 import argparse
-import time
 
 from dawnet_client import ui_param
 

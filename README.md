@@ -96,7 +96,8 @@ dawnet.connect_to_server()
 
 ## CONFIGURATION:
 ```
-export DAWNET_API_BASE_URL='http://localhost:8000'
-export DAWNET_SOCKET_IP='0.0.0.0'
-export DAWNET_SOCKET_PORT='8765'
+export DN_CLIENT_API_BASE_URL='http://localhost:8000'
+export DN_CLIENT_SOCKET_IP='0.0.0.0'
+export DN_CLIENT_SOCKET_PORT='8765'
+export DN_CLIENT_SENTRY_API_KEY='XXX'
 ```

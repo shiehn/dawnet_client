@@ -59,7 +59,7 @@ class ResultsHandler:
                              "- On Linux (Arch Linux): Run 'sudo pacman -S ffmpeg' in the terminal.\n"
                              "For other operating systems or more detailed instructions, visit the FFmpeg website: https://ffmpeg.org/download.html")
             print(error_message)  # TODO how do errors get reported to the user?
-            self.add_error(error_message)
+            await self.add_error(error_message)
             return False
 
         converted_file_path = None
@@ -83,7 +83,7 @@ class ResultsHandler:
                 DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_UPLOAD.value,
                 DNTag.DNMsg.value: str(e),
             })
-            self.add_error(str(e))
+            await self.add_error(str(e))
 
         try:
             file_url = await self.file_uploader.upload(converted_file_path,
@@ -100,7 +100,7 @@ class ResultsHandler:
                 DNTag.DNMsgStage.value: DNMsgStage.CLIENT_UPLOAD_ASSET.value,
                 DNTag.DNMsg.value: str(e),
             })
-            self.add_error(str(e))
+            await self.add_error(str(e))
 
         return True
 
