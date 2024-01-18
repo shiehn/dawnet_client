@@ -1,6 +1,12 @@
+# DAWNet
+
+The `DAWNet` is a DAW(digit audio workstation) plugin that connects to a remote Google Colab or Script.  A user can send audio files from the plugin for remote processing. Hence, perform computationally expensive tasks such as text-2-audio or stem separation without leaving the DAW. 
+
+For more information visit: [https://dawnet.tools/](https://dawnet.tools/)
+
 # dawnet-client
 
-The `DAWNet client` is a python3 pip package.  It is used to create `DAWNet remotes`.  Remotes are scripts created with the python client.  The client allows a user to register remote functions with the DAWNet discovery server. After a function has been registered it can then be triggered remotely from `DAWNet plugin.
+The `DAWNet client` (this repo) is a python3 pip package.  It is used to create `DAWNet remotes`.  The client is responsible for moving data and files backand forth from the plugin (and server).   The client allows a user to register python functions with the DAWNet discovery server. After a function has been registered it can then be triggered remotely from `DAWNet plugin.   
 
 ::: warning
 NOTE: The plugin is in an active, pre-alpha state.  It has only been tested on Ableton 11 on MAC M1.
@@ -95,6 +101,9 @@ dawnet.connect_to_server()
 
 
 ## CONFIGURATION:
+
+*Note:* If the following environment variables are not set, the client will use the default values.  The default values will point to the public DAWNet server.  If you wish to host your own instance you will need to configure the following environment variables. 
+
 ```
 export DN_CLIENT_API_BASE_URL='http://localhost:8000'
 export DN_CLIENT_SOCKET_IP='0.0.0.0'

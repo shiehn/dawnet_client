@@ -20,12 +20,14 @@ from inspect import signature, Parameter
 # Apply nest_asyncio to allow nested running of event loops
 nest_asyncio.apply()
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 
 class RunStatus:
     def __init__(self):
-        self.status = 'idle'
+        self.status = "idle"
 
 
 run_status = RunStatus()
@@ -42,7 +44,7 @@ class WebSocketClient:
         self.websocket = None
         self.method_registry = {}
         self.method_details = {}
-        self.run_status = 'idle'
+        self.run_status = "idle"
         self.dawnet_token = None
         self.message_id = None
         self.results = None
@@ -80,54 +82,65 @@ class WebSocketClient:
 
             # Construct the message to register the method
             register_compute_contract_msg = {
-                'token': self.dawnet_token,
-                'type': 'contract',
-                'data': last_method_details
+                "token": self.dawnet_token,
+                "type": "contract",
+                "data": last_method_details,
             }
 
             # Send the registration message to the server
             await self.websocket.send(json.dumps(register_compute_contract_msg))
-            self.dn_tracer.log_event(self.dawnet_token, {
-                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_CONTRACT.value,
-                DNTag.DNMsg.value: f"Sent contract for registration. Token: {self.dawnet_token}",
-            })
+            self.dn_tracer.log_event(
+                self.dawnet_token,
+                {
+                    DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_CONTRACT.value,
+                    DNTag.DNMsg.value: f"Sent contract for registration. Token: {self.dawnet_token}",
+                },
+            )
 
     async def connect(self):
         if self.websocket is None or self.websocket.closed:
             uri = f"ws://{self.server_ip}:{self.server_port}"
             self.websocket = await websockets.connect(uri)
-            self.dn_tracer.log_event(self.dawnet_token, {
-                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
-                DNTag.DNMsg.value: f"Connected to {uri}",
-            })
+            self.dn_tracer.log_event(
+                self.dawnet_token,
+                {
+                    DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
+                    DNTag.DNMsg.value: f"Connected to {uri}",
+                },
+            )
             self.results = ResultsHandler(
                 websocket=self.websocket,
                 token=self.dawnet_token,
                 target_sample_rate=self.output_sample_rate,
                 target_bit_depth=self.output_bit_depth,
                 target_channels=self.output_channels,
-                target_format=self.output_format
+                target_format=self.output_format,
             )
 
         try:
             await self.register_compute_instance()
         except Exception as e:
-            self.dn_tracer.log_error(self.dawnet_token, {
-                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
-                DNTag.DNMsg.value: f"Error connecting. {e}",
-            })
+            self.dn_tracer.log_error(
+                self.dawnet_token,
+                {
+                    DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
+                    DNTag.DNMsg.value: f"Error connecting. {e}",
+                },
+            )
 
     async def register_compute_instance(self):
         if self.dawnet_token is None:
-            raise Exception("Token not set. Please call set_token(token) before registering a method.")
+            raise Exception(
+                "Token not set. Please call set_token(token) before registering a method."
+            )
 
         # Construct the message to register the compute instance
         register_compute_instance_msg = {
-            'token': self.dawnet_token,
-            'type': 'register',
-            'data': {
-                'status': 1  # Assuming 'status': 1 indicates a successful registration
-            }
+            "token": self.dawnet_token,
+            "type": "register",
+            "data": {
+                "status": 1  # Assuming 'status': 1 indicates a successful registration
+            },
         }
 
         # Send the registration message to the server
@@ -135,7 +148,9 @@ class WebSocketClient:
 
     async def register_method(self, method):
         if self.dawnet_token is None:
-            raise Exception("Token not set. Please call set_token(token) before registering a method.")
+            raise Exception(
+                "Token not set. Please call set_token(token) before registering a method."
+            )
 
         if not asyncio.iscoroutinefunction(method):
             raise ValueError("The method must be asynchronous (async).")
@@ -148,12 +163,22 @@ class WebSocketClient:
         sig = signature(method)
         params = []
         param_names = set()
-        supported_types = {'int', 'float', 'str', 'DAWNetFilePath'}
-        supported_ui_param_keys = {'min', 'max', 'step', 'default', 'ui_component', 'options'}
-        supported_ui_components = {'DAWNetNumberSlider', 'DAWNetMultiChoice'}  # Define supported UI components here
+        supported_types = {"int", "float", "str", "DAWNetFilePath"}
+        supported_ui_param_keys = {
+            "min",
+            "max",
+            "step",
+            "default",
+            "ui_component",
+            "options",
+        }
+        supported_ui_components = {
+            "DAWNetNumberSlider",
+            "DAWNetMultiChoice",
+        }  # Define supported UI components here
         ui_component_requirements = {
-            'dawnetnumberslider': {'min', 'max', 'step', 'default'},
-            'dawnetmultichoice': {'options', 'default'},
+            "dawnetnumberslider": {"min", "max", "step", "default"},
+            "dawnetmultichoice": {"options", "default"},
             # Add other UI components and their required params here
         }
         max_param_count = 12
@@ -164,58 +189,79 @@ class WebSocketClient:
 
         for param in sig.parameters.values():
             if len(param.name) > max_param_name_length:
-                raise ValueError(f"Parameter name '{param.name}' exceeds 36 characters.")
+                raise ValueError(
+                    f"Parameter name '{param.name}' exceeds 36 characters."
+                )
 
             if param.name in param_names:
                 raise ValueError(f"Duplicate parameter name '{param.name}' detected.")
             param_names.add(param.name)
 
             if param.annotation is Parameter.empty:
-                raise ValueError(f"Parameter '{param.name}' is missing a type annotation.")
+                raise ValueError(
+                    f"Parameter '{param.name}' is missing a type annotation."
+                )
 
             param_type_name = param.annotation.__name__
             if param_type_name not in supported_types:
-                raise ValueError(f"Unsupported type '{param_type_name}' for parameter '{param.name}'.")
+                raise ValueError(
+                    f"Unsupported type '{param_type_name}' for parameter '{param.name}'."
+                )
 
             # Check for default value from signature
             default_value = None if param.default is Parameter.empty else param.default
 
             # Initialize UI component details
-            ui_component_details = {'ui_component': None}
+            ui_component_details = {"ui_component": None}
 
             # Check for UI component and overrides from decorator
-            if hasattr(method, '_ui_params') and param.name in method._ui_params:
+            if hasattr(method, "_ui_params") and param.name in method._ui_params:
                 ui_param_info = method._ui_params[param.name]
 
                 # Check for unsupported UI param keys
                 for key in ui_param_info.keys():
                     if key not in supported_ui_param_keys:
-                        raise ValueError(f"Unsupported UI param '{key}' for parameter '{param.name}'.")
+                        raise ValueError(
+                            f"Unsupported UI param '{key}' for parameter '{param.name}'."
+                        )
 
-                if 'ui_component' in ui_param_info:
+                if "ui_component" in ui_param_info:
                     # Normalize the UI component name to lower case
-                    ui_component = ui_param_info['ui_component'].lower()
+                    ui_component = ui_param_info["ui_component"].lower()
 
                     # Check if all required parameters for the UI component are present
                     required_params = ui_component_requirements.get(ui_component, set())
-                    missing_params = required_params - set(key.lower() for key in ui_param_info.keys())
+                    missing_params = required_params - set(
+                        key.lower() for key in ui_param_info.keys()
+                    )
                     if missing_params:
                         raise ValueError(
-                            f"Missing required param(s) {missing_params} for UI component '{ui_component}' in parameter '{param.name}'.")
+                            f"Missing required param(s) {missing_params} for UI component '{ui_component}' in parameter '{param.name}'."
+                        )
 
-                    if ui_component and ui_component.lower() not in {comp.lower() for comp in supported_ui_components}:
-                        raise ValueError(f"Unsupported UI component '{ui_component}' for parameter '{param.name}'.")
+                    if ui_component and ui_component.lower() not in {
+                        comp.lower() for comp in supported_ui_components
+                    }:
+                        raise ValueError(
+                            f"Unsupported UI component '{ui_component}' for parameter '{param.name}'."
+                        )
                     ui_component_details["ui_component"] = ui_component
 
                     # Handle other UI component details, excluding 'default'
-                    ui_component_details.update({k: v for k, v in ui_param_info.items() if k != 'default'})
+                    ui_component_details.update(
+                        {k: v for k, v in ui_param_info.items() if k != "default"}
+                    )
 
                 # Override default value if specified in decorator
-                if 'default' in ui_param_info:
-                    default_value = ui_param_info['default']
+                if "default" in ui_param_info:
+                    default_value = ui_param_info["default"]
 
             # Merge parameter information with UI component details
-            param_info = {"name": param.name, "type": param_type_name, "default_value": default_value}
+            param_info = {
+                "name": param.name,
+                "type": param_type_name,
+                "default_value": default_value,
+            }
             param_info.update(ui_component_details)
 
             params.append(param_info)
@@ -228,20 +274,23 @@ class WebSocketClient:
             "author": self.author,
             "name": self.name,
             "description": self.description,
-            "version": self.version
+            "version": self.version,
         }
         self.method_details[method_name] = method_details
 
         # Update registry with the latest method
         self.method_registry = {method_name: method}
 
-        self.dn_tracer.log_event(self.dawnet_token, {
-            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
-            DNTag.DNMsg.value: f"Registered method: {method_name}",
-        })
+        self.dn_tracer.log_event(
+            self.dawnet_token,
+            {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
+                DNTag.DNMsg.value: f"Registered method: {method_name}",
+            },
+        )
 
     async def run_method(self, name, **kwargs):
-        run_status.status = 'running'
+        run_status.status = "running"
         if name in self.method_registry:
             method = self.method_registry[name]
             if asyncio.iscoroutinefunction(method):
@@ -287,19 +336,25 @@ class WebSocketClient:
 
                     await self.results.send()
 
-                    self.dn_tracer.log_event(self.dawnet_token, {
-                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
-                        DNTag.DNMsg.value: f"Ran method: {name}",
-                    })
+                    self.dn_tracer.log_event(
+                        self.dawnet_token,
+                        {
+                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
+                            DNTag.DNMsg.value: f"Ran method: {name}",
+                        },
+                    )
                 except Exception as e:
                     await self.results.add_error("ERROR:" + str(e))
                     print("IM IN THE EXCEPTION")
                     await self.results.send()
 
-                    self.dn_tracer.log_error(self.dawnet_token, {
-                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
-                        DNTag.DNMsg.value: f"Error running method: {e}",
-                    })
+                    self.dn_tracer.log_error(
+                        self.dawnet_token,
+                        {
+                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_RUN_METHOD.value,
+                            DNTag.DNMsg.value: f"Error running method: {e}",
+                        },
+                    )
             else:
                 print("IS NOT COROUTINE")
                 # If the method is not a coroutine, run it in an executor
@@ -317,10 +372,10 @@ class WebSocketClient:
                 #         DNTag.DNMsg.value: f"Error running method: {e}",
                 #     })
 
-            run_status.status = 'stopped'
+            run_status.status = "stopped"
             return True
         else:
-            run_status.status = 'stopped'
+            run_status.status = "stopped"
             raise Exception("Method not registered")
 
     async def download_gcp_files(self, obj, session):
@@ -329,20 +384,28 @@ class WebSocketClient:
         """
         if isinstance(obj, dict):
             for key, value in obj.items():
-                if isinstance(value, str) and value.startswith("https://storage.googleapis.com"):
+                if isinstance(value, str) and value.startswith(
+                    "https://storage.googleapis.com"
+                ):
                     # Download and replace the URL with a local file path
                     try:
                         obj[key] = await self.download_file(value, session)
 
-                        self.dn_tracer.log_event(self.dawnet_token, {
-                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_DOWNLOAD_ASSET.value,
-                            DNTag.DNMsg.value: f"Downloaded: {str(obj[key])}",
-                        })
+                        self.dn_tracer.log_event(
+                            self.dawnet_token,
+                            {
+                                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_DOWNLOAD_ASSET.value,
+                                DNTag.DNMsg.value: f"Downloaded: {str(obj[key])}",
+                            },
+                        )
                     except Exception as e:
-                        self.dn_tracer.log_error(self.dawnet_token, {
-                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_DOWNLOAD_ASSET.value,
-                            DNTag.DNMsg.value: f"Error downloading: {e}",
-                        })
+                        self.dn_tracer.log_error(
+                            self.dawnet_token,
+                            {
+                                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_DOWNLOAD_ASSET.value,
+                                DNTag.DNMsg.value: f"Error downloading: {e}",
+                            },
+                        )
                 elif isinstance(value, (dict, list)):
                     await self.download_gcp_files(value, session)
         elif isinstance(obj, list):
@@ -353,29 +416,47 @@ class WebSocketClient:
         """
         Download a file from a URL, save it to a temporary directory, and process if it's an audio file.
         """
-        local_filename = url.split('/')[-1]
+        local_filename = url.split("/")[-1]
         local_path = os.path.join(self.temp_dir, local_filename)
 
         async with session.get(url) as response:
             if response.status == 200:
-                with open(local_path, 'wb') as f:
+                with open(local_path, "wb") as f:
                     f.write(await response.read())
 
                 # Check if the file is an audio file
-                if os.path.splitext(local_path)[1][1:] in ['wav', 'mp3', 'aif', 'aiff', 'flac', 'ogg']:
+                if os.path.splitext(local_path)[1][1:] in [
+                    "wav",
+                    "mp3",
+                    "aif",
+                    "aiff",
+                    "flac",
+                    "ogg",
+                ]:
                     try:
-                        local_path = process_audio_file(local_path, self.input_format, self.input_sample_rate,
-                                                        self.input_bit_depth, self.input_channels)
+                        local_path = process_audio_file(
+                            local_path,
+                            self.input_format,
+                            self.input_sample_rate,
+                            self.input_bit_depth,
+                            self.input_channels,
+                        )
 
-                        self.dn_tracer.log_event(self.dawnet_token, {
-                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_DOWNLOAD.value,
-                            DNTag.DNMsg.value: f"Converted download: {local_path}",
-                        })
+                        self.dn_tracer.log_event(
+                            self.dawnet_token,
+                            {
+                                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_DOWNLOAD.value,
+                                DNTag.DNMsg.value: f"Converted download: {local_path}",
+                            },
+                        )
                     except Exception as e:
-                        self.dn_tracer.log_error(self.dawnet_token, {
-                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_DOWNLOAD.value,
-                            DNTag.DNMsg.value: f"Error converting downloading: {e}",
-                        })
+                        self.dn_tracer.log_error(
+                            self.dawnet_token,
+                            {
+                                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_DOWNLOAD.value,
+                                DNTag.DNMsg.value: f"Error converting downloading: {e}",
+                            },
+                        )
 
                 return local_path
             else:
@@ -383,7 +464,9 @@ class WebSocketClient:
 
     async def listen(self):
         if self.dawnet_token is None:
-            raise Exception("Token not set. Please call set_token(token) before starting to listen.")
+            raise Exception(
+                "Token not set. Please call set_token(token) before starting to listen."
+            )
 
         await self.connect()  # Ensure we're connected
 
@@ -403,36 +486,44 @@ class WebSocketClient:
                     try:
                         await self.download_gcp_files(msg, session)
                     except Exception as e:
-                        self.dn_tracer.log_error(_client.dawnet_token, {
-                            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_DOWNLOAD_ASSET.value,
-                            DNTag.DNMsg.value: f"Error downloading GCP files: {e}",
-                        })
+                        self.dn_tracer.log_error(
+                            _client.dawnet_token,
+                            {
+                                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_DOWNLOAD_ASSET.value,
+                                DNTag.DNMsg.value: f"Error downloading GCP files: {e}",
+                            },
+                        )
 
-                    if msg['type'] == "run_method":
+                    if msg["type"] == "run_method":
                         # Check if the status is already "running"
                         if run_status.status == "running":
                             await self.websocket.send("Plugin already started!")
                         else:
                             self.results.clear_outputs()  # Clear previous outputs before running the method
-                            self.message_id = msg['message_id']
+                            self.message_id = msg["message_id"]
                             self.results.set_message_id(self.message_id)
-                            self.daw_bpm = msg['bpm']
-                            self.daw_sample_rate = msg['sample_rate']
+                            self.daw_bpm = msg["bpm"]
+                            self.daw_sample_rate = msg["sample_rate"]
 
-                            data = msg['data']
-                            method_name = data['method_name']
+                            data = msg["data"]
+                            method_name = data["method_name"]
                             # Extract 'value' for each parameter to build kwargs
-                            params = {param_name: param_details['value'] for param_name, param_details in
-                                      data['params'].items()}
+                            params = {
+                                param_name: param_details["value"]
+                                for param_name, param_details in data["params"].items()
+                            }
 
                             # Now you can call run_method using argument unpacking
                             asyncio.create_task(self.run_method(method_name, **params))
 
         except websockets.exceptions.ConnectionClosedOK:
-            self.dn_tracer.log_error(_client.dawnet_token, {
-                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
-                DNTag.DNMsg.value: f"Connection was closed.",
-            })
+            self.dn_tracer.log_error(
+                _client.dawnet_token,
+                {
+                    DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
+                    DNTag.DNMsg.value: "Connection was closed.",
+                },
+            )
 
     def set_token(self, token):
         self.dawnet_token = token
@@ -483,7 +574,7 @@ def set_token(token):
     try:
         # Check if the token is a valid UUID4
         uuid_obj = uuid.UUID(token, version=4)
-        if uuid_obj.hex != token.replace('-', ''):
+        if uuid_obj.hex != token.replace("-", ""):
             raise ValueError
     except ValueError:
         raise ValueError(f"Invalid token: '{token}'. Token must be a valid UUID4.")
@@ -500,10 +591,13 @@ def register_method(method):
         asyncio.run(_register_method(method))
     except Exception as e:
         dn_tracer = SentryEventLogger(service_name=DNSystemType.DN_CLIENT.value)
-        dn_tracer.log_error(_client.dawnet_token, {
-            DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
-            DNTag.DNMsg.value: f"Error registering method: {e}",
-        })
+        dn_tracer.log_error(
+            _client.dawnet_token,
+            {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
+                DNTag.DNMsg.value: f"Error registering method: {e}",
+            },
+        )
 
 
 def set_author(author: str):
@@ -532,7 +626,8 @@ def set_input_target_sample_rate(sample_rate: int):
     else:
         # Raise an error if the sample rate is not valid
         raise ValueError(
-            f"Invalid sample rate: '{sample_rate}'. Valid sample rates are: {', '.join(map(str, valid_sample_rates))}")
+            f"Invalid sample rate: '{sample_rate}'. Valid sample rates are: {', '.join(map(str, valid_sample_rates))}"
+        )
 
 
 def set_input_target_bit_depth(bit_depth: int):
@@ -545,7 +640,8 @@ def set_input_target_bit_depth(bit_depth: int):
     else:
         # Raise an error if the bit depth is not valid
         raise ValueError(
-            f"Invalid bit depth: '{bit_depth}'. Valid bit depths are: {', '.join(map(str, valid_bit_depths))}")
+            f"Invalid bit depth: '{bit_depth}'. Valid bit depths are: {', '.join(map(str, valid_bit_depths))}"
+        )
 
 
 def set_input_target_channels(channels: int):
@@ -558,7 +654,8 @@ def set_input_target_channels(channels: int):
     else:
         # Raise an error if the channel count is not valid
         raise ValueError(
-            f"Invalid channel count: '{channels}'. Valid channel counts are: {', '.join(map(str, valid_channels))}")
+            f"Invalid channel count: '{channels}'. Valid channel counts are: {', '.join(map(str, valid_channels))}"
+        )
 
 
 def set_input_target_format(format: str):
@@ -573,7 +670,9 @@ def set_input_target_format(format: str):
         _client.input_format = format_lower
     else:
         # Raise an error if the format is not valid
-        raise ValueError(f"Invalid format: '{format}'. Valid formats are: {', '.join(valid_formats)}")
+        raise ValueError(
+            f"Invalid format: '{format}'. Valid formats are: {', '.join(valid_formats)}"
+        )
 
 
 def set_output_target_sample_rate(sample_rate: int):
@@ -582,7 +681,9 @@ def set_output_target_sample_rate(sample_rate: int):
     if sample_rate in valid_sample_rates:
         _client.output_sample_rate = sample_rate
     else:
-        raise ValueError(f"Invalid output sample rate: '{sample_rate}'. Valid rates: {valid_sample_rates}")
+        raise ValueError(
+            f"Invalid output sample rate: '{sample_rate}'. Valid rates: {valid_sample_rates}"
+        )
 
 
 def set_output_target_bit_depth(bit_depth: int):
@@ -591,7 +692,9 @@ def set_output_target_bit_depth(bit_depth: int):
     if bit_depth in valid_bit_depths:
         _client.output_bit_depth = bit_depth
     else:
-        raise ValueError(f"Invalid output bit depth: '{bit_depth}'. Valid depths: {valid_bit_depths}")
+        raise ValueError(
+            f"Invalid output bit depth: '{bit_depth}'. Valid depths: {valid_bit_depths}"
+        )
 
 
 def set_output_target_channels(channels: int):
@@ -600,7 +703,9 @@ def set_output_target_channels(channels: int):
     if channels in valid_channels:
         _client.output_channels = channels
     else:
-        raise ValueError(f"Invalid output channel count: '{channels}'. Valid counts: {valid_channels}")
+        raise ValueError(
+            f"Invalid output channel count: '{channels}'. Valid counts: {valid_channels}"
+        )
 
 
 def set_output_target_format(format: str):
@@ -610,7 +715,9 @@ def set_output_target_format(format: str):
     if format_lower in valid_formats:
         _client.output_format = format
     else:
-        raise ValueError(f"Invalid output format: '{format}'. Valid formats: {valid_formats}")
+        raise ValueError(
+            f"Invalid output format: '{format}'. Valid formats: {valid_formats}"
+        )
 
 
 def get_daw_bpm():
