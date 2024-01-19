@@ -14,7 +14,7 @@ from dawnet_client.core import DAWNetFilePath
 
 @ui_param("a", "DAWNetNumberSlider", min=0, max=10, step=1, default=5)
 # @ui_param('c', 'DAWNetMultiChoice', options=['cherries', 'oranges', 'grapes'], default='grapes')
-async def arbitrary_method_a(a: int, b: DAWNetFilePath):
+async def arbitrary_method_a(a: int, b: DAWNetFilePath, c: bool = False):
     try:
         print(f"Input A: {a}")
         print(f"Input B: {b}")

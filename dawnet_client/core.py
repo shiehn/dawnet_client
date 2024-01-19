@@ -163,7 +163,7 @@ class WebSocketClient:
         sig = signature(method)
         params = []
         param_names = set()
-        supported_types = {"int", "float", "str", "DAWNetFilePath"}
+        supported_types = {"bool", "int", "float", "str", "DAWNetFilePath"}
         supported_ui_param_keys = {
             "min",
             "max",
@@ -210,6 +210,11 @@ class WebSocketClient:
 
             # Check for default value from signature
             default_value = None if param.default is Parameter.empty else param.default
+
+            # if the type is sent with no default value, set it to the default value for that type
+            default_value = await self.set_default_for_types(
+                default_value, param_type_name
+            )
 
             # Initialize UI component details
             ui_component_details = {"ui_component": None}
@@ -288,6 +293,18 @@ class WebSocketClient:
                 DNTag.DNMsg.value: f"Registered method: {method_name}",
             },
         )
+
+    async def set_default_for_types(self, default_value, param_type_name):
+        # if the type is bool and the default value is None, set it to False
+        if param_type_name == "bool" and default_value is None:
+            default_value = False
+        if param_type_name == "int" and default_value is None:
+            default_value = 0
+        if param_type_name == "float" and default_value is None:
+            default_value = 0.0
+        if param_type_name == "str" and default_value is None:
+            default_value = ""
+        return default_value
 
     async def run_method(self, name, **kwargs):
         run_status.status = "running"
