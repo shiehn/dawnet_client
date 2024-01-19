@@ -1,6 +1,6 @@
 # DAWNet
 
-The `DAWNet` is a DAW(digit audio workstation) plugin that connects to a remote Google Colab or Script.  A user can send audio files from the plugin for remote processing. Hence, perform computationally expensive tasks such as text-2-audio or stem separation without leaving the DAW. 
+`DAWNet` is a DAW (digit audio workstation) plugin that connects to a remote Google Colab or Script.  A user can send audio files from the plugin for remote processing. Hence, perform computationally expensive tasks such as text-2-audio or stem separation without leaving the DAW. 
 
 For more information visit: [https://dawnet.tools/](https://dawnet.tools/)
 
@@ -105,7 +105,7 @@ dawnet.connect_to_server()
 *Note:* If the following environment variables are not set, the client will use the default values.  The default values will point to the public DAWNet server.  If you wish to host your own instance you will need to configure the following environment variables. 
 
 ```
-export DN_CLIENT_API_BASE_URL='http://localhost:8000'
+export DN_CLIENT_API_BASE_URL='http://localhost:8081'
 export DN_CLIENT_SOCKET_IP='0.0.0.0'
 export DN_CLIENT_SOCKET_PORT='8765'
 export DN_CLIENT_SENTRY_API_KEY='XXX'
