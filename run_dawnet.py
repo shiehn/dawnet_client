@@ -14,7 +14,7 @@ from dawnet_client.core import DAWNetFilePath
 
 @ui_param("a", "DAWNetNumberSlider", min=0, max=10, step=1, default=5)
 # @ui_param('c', 'DAWNetMultiChoice', options=['cherries', 'oranges', 'grapes'], default='grapes')
-async def arbitrary_method_a(a: int, b: DAWNetFilePath, c: bool = False):
+async def arbitrary_method(a: int, b: DAWNetFilePath, c: bool = False):
     try:
         print(f"Input A: {a}")
         print(f"Input B: {b}")
@@ -44,8 +44,8 @@ dawnet.set_output_target_bit_depth(16)
 dawnet.set_token(token=args.token)
 dawnet.set_name("My Remote Code")
 dawnet.set_description("This is not a real description.")
-dawnet.register_method(arbitrary_method_a)
+dawnet.register_method(arbitrary_method)
 
 
-print("REGISTERED TOKEN & " + str(arbitrary_method_a))
+print("REGISTERED TOKEN & " + str(arbitrary_method))
 dawnet.connect_to_server()

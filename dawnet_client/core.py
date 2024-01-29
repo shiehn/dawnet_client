@@ -46,6 +46,7 @@ class WebSocketClient:
         self.method_details = {}
         self.run_status = "idle"
         self.dawnet_token = None
+        self.master_token = None
         self.message_id = None
         self.results = None
         self.author = "Default Author"
@@ -72,6 +73,16 @@ class WebSocketClient:
         self.daw_sample_rate = 0
 
     async def send_registered_methods_to_server(self):
+        if self.dawnet_token is None:
+            raise Exception(
+                "Token not set. Please call set_token(token) before registering a method."
+            )
+
+        if self.master_token is None:
+            raise Exception(
+                "Master Token not set. Please call set_token(token) before registering a method."
+            )
+
         await self.connect()  # Ensure we're connected
 
         # Check if there's at least one method registered
@@ -146,41 +157,10 @@ class WebSocketClient:
         # Send the registration message to the server
         await self.websocket.send(json.dumps(register_compute_instance_msg))
 
-    async def register_method(self, method):
-        if self.dawnet_token is None:
-            raise Exception(
-                "Token not set. Please call set_token(token) before registering a method."
-            )
-
-        if not asyncio.iscoroutinefunction(method):
-            raise ValueError("The method must be asynchronous (async).")
-
-        await self.connect()  # Ensure we're connected
-
-        # Extract the method name
-        method_name = method.__name__
-
-        sig = signature(method)
+    async def validate_and_process_parameters(self, method):
         params = []
         param_names = set()
-        supported_types = {"bool", "int", "float", "str", "DAWNetFilePath"}
-        supported_ui_param_keys = {
-            "min",
-            "max",
-            "step",
-            "default",
-            "ui_component",
-            "options",
-        }
-        supported_ui_components = {
-            "DAWNetNumberSlider",
-            "DAWNetMultiChoice",
-        }  # Define supported UI components here
-        ui_component_requirements = {
-            "dawnetnumberslider": {"min", "max", "step", "default"},
-            "dawnetmultichoice": {"options", "default"},
-            # Add other UI components and their required params here
-        }
+        sig = signature(method)
         max_param_count = 12
         max_param_name_length = 36
 
@@ -203,65 +183,18 @@ class WebSocketClient:
                 )
 
             param_type_name = param.annotation.__name__
+            supported_types = {"bool", "int", "float", "str", "DAWNetFilePath"}
             if param_type_name not in supported_types:
                 raise ValueError(
                     f"Unsupported type '{param_type_name}' for parameter '{param.name}'."
                 )
 
-            # Check for default value from signature
             default_value = None if param.default is Parameter.empty else param.default
-
-            # if the type is sent with no default value, set it to the default value for that type
             default_value = await self.set_default_for_types(
                 default_value, param_type_name
             )
 
-            # Initialize UI component details
-            ui_component_details = {"ui_component": None}
-
-            # Check for UI component and overrides from decorator
-            if hasattr(method, "_ui_params") and param.name in method._ui_params:
-                ui_param_info = method._ui_params[param.name]
-
-                # Check for unsupported UI param keys
-                for key in ui_param_info.keys():
-                    if key not in supported_ui_param_keys:
-                        raise ValueError(
-                            f"Unsupported UI param '{key}' for parameter '{param.name}'."
-                        )
-
-                if "ui_component" in ui_param_info:
-                    # Normalize the UI component name to lower case
-                    ui_component = ui_param_info["ui_component"].lower()
-
-                    # Check if all required parameters for the UI component are present
-                    required_params = ui_component_requirements.get(ui_component, set())
-                    missing_params = required_params - set(
-                        key.lower() for key in ui_param_info.keys()
-                    )
-                    if missing_params:
-                        raise ValueError(
-                            f"Missing required param(s) {missing_params} for UI component '{ui_component}' in parameter '{param.name}'."
-                        )
-
-                    if ui_component and ui_component.lower() not in {
-                        comp.lower() for comp in supported_ui_components
-                    }:
-                        raise ValueError(
-                            f"Unsupported UI component '{ui_component}' for parameter '{param.name}'."
-                        )
-                    ui_component_details["ui_component"] = ui_component
-
-                    # Handle other UI component details, excluding 'default'
-                    ui_component_details.update(
-                        {k: v for k, v in ui_param_info.items() if k != "default"}
-                    )
-
-                # Override default value if specified in decorator
-                if "default" in ui_param_info:
-                    default_value = ui_param_info["default"]
-
-            # Merge parameter information with UI component details
+            ui_component_details = self.process_ui_components(method, param)
             param_info = {
                 "name": param.name,
                 "type": param_type_name,
@@ -271,8 +204,62 @@ class WebSocketClient:
 
             params.append(param_info)
 
-        # Create the JSON payload
-        # Store method details without sending to the server
+        return params
+
+    def process_ui_components(self, method, param):
+        ui_component_details = {"ui_component": None}
+        supported_ui_param_keys = {
+            "min",
+            "max",
+            "step",
+            "default",
+            "ui_component",
+            "options",
+        }
+        supported_ui_components = {"DAWNetNumberSlider", "DAWNetMultiChoice"}
+        ui_component_requirements = {
+            "dawnetnumberslider": {"min", "max", "step", "default"},
+            "dawnetmultichoice": {"options", "default"},
+        }
+
+        if hasattr(method, "_ui_params") and param.name in method._ui_params:
+            ui_param_info = method._ui_params[param.name]
+
+            for key in ui_param_info.keys():
+                if key not in supported_ui_param_keys:
+                    raise ValueError(
+                        f"Unsupported UI param '{key}' for parameter '{param.name}'."
+                    )
+
+            if "ui_component" in ui_param_info:
+                ui_component = ui_param_info["ui_component"].lower()
+                required_params = ui_component_requirements.get(ui_component, set())
+                missing_params = required_params - set(
+                    key.lower() for key in ui_param_info.keys()
+                )
+                if missing_params:
+                    raise ValueError(
+                        f"Missing required param(s) {missing_params} for UI component '{ui_component}' in parameter '{param.name}'."
+                    )
+
+                if ui_component not in {
+                    comp.lower() for comp in supported_ui_components
+                }:
+                    raise ValueError(
+                        f"Unsupported UI component '{ui_component}' for parameter '{param.name}'."
+                    )
+
+                ui_component_details["ui_component"] = ui_component
+                ui_component_details.update(
+                    {k: v for k, v in ui_param_info.items() if k != "default"}
+                )
+
+            if "default" in ui_param_info:
+                ui_component_details["default_value"] = ui_param_info["default"]
+
+        return ui_component_details
+
+    def create_json_payload(self, method_name, params):
         method_details = {
             "method_name": method_name,
             "params": params,
@@ -281,18 +268,11 @@ class WebSocketClient:
             "description": self.description,
             "version": self.version,
         }
-        self.method_details[method_name] = method_details
+        return method_details
 
-        # Update registry with the latest method
-        self.method_registry = {method_name: method}
-
-        self.dn_tracer.log_event(
-            self.dawnet_token,
-            {
-                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
-                DNTag.DNMsg.value: f"Registered method: {method_name}",
-            },
-        )
+    def generate_uuid(self, method_details):
+        method_details_str = json.dumps(method_details, sort_keys=True)
+        return str(uuid.uuid5(uuid.UUID(self.master_token), method_details_str))
 
     async def set_default_for_types(self, default_value, param_type_name):
         # if the type is bool and the default value is None, set it to False
@@ -305,6 +285,32 @@ class WebSocketClient:
         if param_type_name == "str" and default_value is None:
             default_value = ""
         return default_value
+
+    async def register_method(self, method):
+        if self.master_token is None:
+            raise Exception(
+                "Master Token not set. Please call set_token(token) before registering a method."
+            )
+
+        if not asyncio.iscoroutinefunction(method):
+            raise ValueError("The method must be asynchronous (async).")
+
+        method_name = method.__name__
+        params = await self.validate_and_process_parameters(method)
+        method_details = self.create_json_payload(method_name, params)
+        self.method_details[method_name] = method_details
+        self.method_registry = {method_name: method}
+        self.dawnet_token = self.generate_uuid(method_details)
+
+        await self.connect()  # Ensure we're connected
+
+        self.dn_tracer.log_event(
+            self.dawnet_token,
+            {
+                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_REG_METHOD.value,
+                DNTag.DNMsg.value: f"Registered method: {method_name}",
+            },
+        )
 
     async def run_method(self, name, **kwargs):
         run_status.status = "running"
@@ -543,9 +549,9 @@ class WebSocketClient:
             )
 
     def set_token(self, token):
-        self.dawnet_token = token
-        if self.results is not None:
-            self.results.update_token(token)
+        self.master_token = token
+        # if self.results is not None:
+        #     self.results.update_token(token)
 
     def set_author(self, author):
         self.author = author
