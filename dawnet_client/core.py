@@ -145,12 +145,20 @@ class WebSocketClient:
                 "Token not set. Please call set_token(token) before registering a method."
             )
 
+        if self.master_token is None:
+            raise Exception(
+                "Master Token not set. Please call set_token(token) before registering a method."
+            )
+
         # Construct the message to register the compute instance
         register_compute_instance_msg = {
             "token": self.dawnet_token,
             "type": "register",
             "data": {
-                "status": 1  # Assuming 'status': 1 indicates a successful registration
+                "master_token": self.master_token,
+                "name": self.name,
+                "description": self.description,
+                "status": 1,  # Assuming 'status': 1 indicates a successful registration
             },
         }
 
@@ -595,12 +603,15 @@ def output():
 # Define the functions that will interact with the WebSocketClient instance
 def set_token(token):
     try:
-        # Check if the token is a valid UUID4
-        uuid_obj = uuid.UUID(token, version=4)
-        if uuid_obj.hex != token.replace("-", ""):
+        # Create a UUID object from the token
+        uuid_obj = uuid.UUID(token)
+
+        # Check if the formatted string of the UUID object matches the input token
+        # This comparison is case-insensitive and ignores hyphens
+        if uuid_obj.hex != token.replace("-", "").lower():
             raise ValueError
     except ValueError:
-        raise ValueError(f"Invalid token: '{token}'. Token must be a valid UUID4.")
+        raise ValueError(f"Invalid token: '{token}'. Token must be a valid UUID.")
 
     _client.set_token(token)
 

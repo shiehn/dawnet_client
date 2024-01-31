@@ -36,6 +36,84 @@ async def test_register_method_one():
         },
     ]
 
+    assert client.master_token != None
+    assert client.dawnet_token != None
+    assert client.dawnet_token != client.master_token
+
+
+@pytest.mark.asyncio
+async def test_register_method_one_with_no_name_no_description():
+    # SETUP
+    client = WebSocketClient("127.0.0.1", "1234")
+    client.connect = AsyncMock()
+    client.set_token(str(uuid.uuid4()))
+
+    # EXECUTE
+    await client.register_method(example_method_one)
+
+    # ASSERTS
+    client.connect.assert_called_once()
+    assert "example_method_one" in client.method_details
+    assert client.method_details["example_method_one"]["params"] == [
+        {"name": "a", "type": "int", "default_value": 0, "ui_component": None},
+        {"name": "b", "type": "float", "default_value": 0.0, "ui_component": None},
+        {"name": "c", "type": "str", "default_value": "", "ui_component": None},
+        {
+            "name": "d",
+            "type": "DAWNetFilePath",
+            "default_value": None,
+            "ui_component": None,
+        },
+    ]
+
+    assert client.method_details["example_method_one"]["name"] == "Default Name"
+    assert (
+        client.method_details["example_method_one"]["description"]
+        == "Default Description"
+    )
+
+    assert client.master_token != None
+    assert client.dawnet_token != None
+    assert client.dawnet_token != client.master_token
+
+
+@pytest.mark.asyncio
+async def test_register_method_one_with_description():
+    # SETUP
+    client = WebSocketClient("127.0.0.1", "1234")
+    client.connect = AsyncMock()
+    client.set_token(str(uuid.uuid4()))
+
+    client.set_name("My Special Method")
+    client.set_description("My Special Method Description")
+
+    # EXECUTE
+    await client.register_method(example_method_one)
+
+    # ASSERTS
+    client.connect.assert_called_once()
+    assert "example_method_one" in client.method_details
+    assert client.method_details["example_method_one"]["params"] == [
+        {"name": "a", "type": "int", "default_value": 0, "ui_component": None},
+        {"name": "b", "type": "float", "default_value": 0.0, "ui_component": None},
+        {"name": "c", "type": "str", "default_value": "", "ui_component": None},
+        {
+            "name": "d",
+            "type": "DAWNetFilePath",
+            "default_value": None,
+            "ui_component": None,
+        },
+    ]
+
+    assert client.method_details["example_method_one"]["name"] == "My Special Method"
+    assert (
+        client.method_details["example_method_one"]["description"]
+        == "My Special Method Description"
+    )
+    assert client.master_token != None
+    assert client.dawnet_token != None
+    assert client.dawnet_token != client.master_token
+
 
 async def example_method_one_defaults(
     a: int = 5, b: float = 2.2, c: str = "hello", d: DAWNetFilePath = None
