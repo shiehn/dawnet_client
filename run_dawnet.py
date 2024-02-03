@@ -42,8 +42,10 @@ dawnet.set_output_target_sample_rate(44100)
 dawnet.set_output_target_bit_depth(16)
 
 dawnet.set_token(token=args.token)
-dawnet.set_name("My Remote Code")
-dawnet.set_description("This is not a real description.")
+dawnet.set_name("DAWNet Template")
+dawnet.set_description(
+    "This is a template intended as a starting place to create custom DAWNet functions."
+)
 dawnet.register_method(arbitrary_method)
 
 

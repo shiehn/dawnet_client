@@ -1,7 +1,7 @@
 import os
 
 from aiohttp import ClientSession
-from .config import API_BASE_URL
+from .config import API_BASE_URL, STORAGE_BUCKET_PATH
 
 
 class FileUploader:
@@ -25,7 +25,8 @@ class FileUploader:
 
     async def upload(self, file_path, file_type) -> str:
         file_name = os.path.basename(file_path)
-        file_url = f"https://storage.googleapis.com/byoc-file-transfer/{file_name}"
+        storage_bucket_path = STORAGE_BUCKET_PATH.rstrip('/')
+        file_url = f"{storage_bucket_path}/{file_name}"
         signed_url = await self.get_signed_url(file_name, "myToken")
         result = await self.upload_file_to_gcp(file_path, signed_url, file_type)
 

@@ -109,4 +109,5 @@ export DN_CLIENT_API_BASE_URL='http://localhost:8081'
 export DN_CLIENT_SOCKET_IP='0.0.0.0'
 export DN_CLIENT_SOCKET_PORT='8765'
 export DN_CLIENT_SENTRY_API_KEY='XXX'
+"DN_CLIENT_STORAGE_BUCKET", "https://storage.googleapis.com/your_gcp_bucket/"
 ```
