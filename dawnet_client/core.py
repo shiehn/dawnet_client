@@ -551,6 +551,15 @@ class WebSocketClient:
 
                                 # Now you can call run_method using argument unpacking
                                 asyncio.create_task(self.run_method(method_name, **params))
+                        elif msg['type'] == 'close_connection':
+                            try:
+                                await self.websocket.close()
+                            except Exception as e:
+                                print("Error closing connection: ", e)
+
+                            print("Connection closed by server")
+                            break  # Exit the while loop
+
                     else:
                         self.dn_tracer.log_error(
                             _client.dawnet_token,
