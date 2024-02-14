@@ -75,12 +75,12 @@ class WebSocketClient:
     async def send_registered_methods_to_server(self):
         if self.dawnet_token is None:
             raise Exception(
-                "Token not set. Please call set_token(token) before registering a method."
+                "Token not set. Please call set_token(token) before calling send_registered_methods_to_server()."
             )
 
         if self.master_token is None:
             raise Exception(
-                "Master Token not set. Please call set_token(token) before registering a method."
+                "Master Token not set. Please call set_token(token) before calling send_registered_methods_to_server()."
             )
 
         await self.connect()  # Ensure we're connected
@@ -308,7 +308,11 @@ class WebSocketClient:
         method_details = self.create_json_payload(method_name, params)
         self.method_details[method_name] = method_details
         self.method_registry = {method_name: method}
-        self.dawnet_token = self.generate_uuid(method_details)
+
+        #TODO: there should be a better way to do this:
+        self.dawnet_token = self.generate_uuid(
+            str(method_details) + str(self.master_token) + str(self.name) + str(self.version) + str(self.author) + str(
+                self.description))
 
         await self.connect()  # Ensure we're connected
 
@@ -416,7 +420,7 @@ class WebSocketClient:
         if isinstance(obj, dict):
             for key, value in obj.items():
                 if isinstance(value, str) and value.startswith(
-                    "https://storage.googleapis.com"
+                        "https://storage.googleapis.com"
                 ):
                     # Download and replace the URL with a local file path
                     try:
@@ -525,27 +529,36 @@ class WebSocketClient:
                             },
                         )
 
-                    if msg["type"] == "run_method":
-                        # Check if the status is already "running"
-                        if run_status.status == "running":
-                            await self.websocket.send("Plugin already started!")
-                        else:
-                            self.results.clear_outputs()  # Clear previous outputs before running the method
-                            self.message_id = msg["message_id"]
-                            self.results.set_message_id(self.message_id)
-                            self.daw_bpm = msg["bpm"]
-                            self.daw_sample_rate = msg["sample_rate"]
+                    if 'type' in msg:
+                        if msg["type"] == "run_method":
+                            # Check if the status is already "running"
+                            if run_status.status == "running":
+                                await self.websocket.send("Plugin already started!")
+                            else:
+                                self.results.clear_outputs()  # Clear previous outputs before running the method
+                                self.message_id = msg["message_id"]
+                                self.results.set_message_id(self.message_id)
+                                self.daw_bpm = msg["bpm"]
+                                self.daw_sample_rate = msg["sample_rate"]
 
-                            data = msg["data"]
-                            method_name = data["method_name"]
-                            # Extract 'value' for each parameter to build kwargs
-                            params = {
-                                param_name: param_details["value"]
-                                for param_name, param_details in data["params"].items()
-                            }
+                                data = msg["data"]
+                                method_name = data["method_name"]
+                                # Extract 'value' for each parameter to build kwargs
+                                params = {
+                                    param_name: param_details["value"]
+                                    for param_name, param_details in data["params"].items()
+                                }
 
-                            # Now you can call run_method using argument unpacking
-                            asyncio.create_task(self.run_method(method_name, **params))
+                                # Now you can call run_method using argument unpacking
+                                asyncio.create_task(self.run_method(method_name, **params))
+                    else:
+                        self.dn_tracer.log_error(
+                            _client.dawnet_token,
+                            {
+                                DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONNECTION.value,
+                                DNTag.DNMsg.value: "UNKNOWN MESSAGE TYPE",
+                            },
+                        )
 
         except websockets.exceptions.ConnectionClosedOK:
             self.dn_tracer.log_error(
