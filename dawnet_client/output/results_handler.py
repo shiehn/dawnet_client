@@ -5,6 +5,7 @@ import subprocess
 from ..dn_tracer import SentryEventLogger, DNSystemType, DNMsgStage, DNTag
 from ..file_uploader import FileUploader
 from ..utils.audio_utils import process_audio_file
+from ..utils.file_type_classifier import FileTypeClassifier
 
 
 # ResultsHandler class to handle the results
@@ -62,48 +63,55 @@ class ResultsHandler:
         self.message_id = message_id
 
     async def add_file(self, file_path):
-        if not self.ffmpeg_installed:
-            error_message = (
-                "FFmpeg is not installed, which is required for processing audio files.\n"
-                "To install FFmpeg, follow these instructions:\n"
-                "- On macOS: Use Homebrew by running 'brew install ffmpeg' in the terminal.\n"
-                "- On Linux (Debian/Ubuntu): Run 'sudo apt-get install ffmpeg' in the terminal.\n"
-                "- On Linux (Fedora): Run 'sudo dnf install ffmpeg' in the terminal.\n"
-                "- On Linux (Arch Linux): Run 'sudo pacman -S ffmpeg' in the terminal.\n"
-                "For other operating systems or more detailed instructions, visit the FFmpeg website: https://ffmpeg.org/download.html"
-            )
-            print(error_message)  # TODO how do errors get reported to the user?
-            await self.add_error(error_message)
-            return False
+        classifier = FileTypeClassifier()
+        input_type = classifier.classify(file_path)
 
-        converted_file_path = None
-        try:
-            # Check and convert audio file if necessary
-            converted_file_path = process_audio_file(
-                file_path,
-                target_format=self.target_format,
-                target_sample_rate=self.target_sample_rate,
-                target_bit_depth=self.target_bit_depth,
-                target_channels=self.target_channels,
-            )
+        if input_type == 'audio':
+            if not self.ffmpeg_installed:
+                error_message = (
+                    "FFmpeg is not installed, which is required for processing audio files.\n"
+                    "To install FFmpeg, follow these instructions:\n"
+                    "- On macOS: Use Homebrew by running 'brew install ffmpeg' in the terminal.\n"
+                    "- On Linux (Debian/Ubuntu): Run 'sudo apt-get install ffmpeg' in the terminal.\n"
+                    "- On Linux (Fedora): Run 'sudo dnf install ffmpeg' in the terminal.\n"
+                    "- On Linux (Arch Linux): Run 'sudo pacman -S ffmpeg' in the terminal.\n"
+                    "For other operating systems or more detailed instructions, visit the FFmpeg website: https://ffmpeg.org/download.html"
+                )
+                print(error_message)  # TODO how do errors get reported to the user?
+                await self.add_error(error_message)
+                return False
 
-            self.dn_tracer.log_event(
-                self.token,
-                {
-                    DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_UPLOAD.value,
-                    DNTag.DNMsg.value: str(converted_file_path),
-                },
-            )
+            converted_file_path = None
+            try:
+                # Check and convert audio file if necessary
+                converted_file_path = process_audio_file(
+                    file_path,
+                    target_format=self.target_format,
+                    target_sample_rate=self.target_sample_rate,
+                    target_bit_depth=self.target_bit_depth,
+                    target_channels=self.target_channels,
+                )
 
-        except Exception as e:
-            self.dn_tracer.log_error(
-                self.token,
-                {
-                    DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_UPLOAD.value,
-                    DNTag.DNMsg.value: str(e),
-                },
-            )
-            await self.add_error(str(e))
+                self.dn_tracer.log_event(
+                    self.token,
+                    {
+                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_UPLOAD.value,
+                        DNTag.DNMsg.value: str(converted_file_path),
+                    },
+                )
+
+            except Exception as e:
+                self.dn_tracer.log_error(
+                    self.token,
+                    {
+                        DNTag.DNMsgStage.value: DNMsgStage.CLIENT_CONVERT_UPLOAD.value,
+                        DNTag.DNMsg.value: str(e),
+                    },
+                )
+                await self.add_error(str(e))
+
+        elif input_type == 'midi':
+            converted_file_path = file_path
 
         try:
             file_url = await self.file_uploader.upload(
@@ -111,7 +119,7 @@ class ResultsHandler:
             )
 
             self.files.append(
-                {"name": os.path.basename(converted_file_path), "url": file_url}
+                {"name": os.path.basename(converted_file_path), "url": file_url, "type": input_type}
             )
 
             self.dn_tracer.log_event(
