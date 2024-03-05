@@ -30,7 +30,7 @@ if not is_ffmpeg_installed():
 
 setup(
     name="dawnet-client",
-    version="0.7.2",
+    version="0.7.3",
     packages=find_packages(),
     install_requires=[
         "aiohttp",

@@ -72,6 +72,11 @@ class WebSocketClient:
         self.daw_bpm = 0
         self.daw_sample_rate = 0
 
+        # Check if DN_CLIENT_TOKEN environment variable is set and non-empty
+        dn_client_token = os.getenv("DN_CLIENT_TOKEN")
+        if dn_client_token:
+            self.master_token = dn_client_token
+
     async def send_registered_methods_to_server(self):
         if self.dawnet_token is None:
             raise Exception(
@@ -579,9 +584,11 @@ class WebSocketClient:
             )
 
     def set_token(self, token):
+        dn_client_token = os.getenv("DN_CLIENT_TOKEN")
+        if dn_client_token:
+            print("Token update is disabled because DN_CLIENT_TOKEN is set.")
+            return  # Exit the function to prevent overriding the token
         self.master_token = token
-        # if self.results is not None:
-        #     self.results.update_token(token)
 
     def set_author(self, author):
         self.author = author
@@ -624,6 +631,12 @@ def output():
 
 # Define the functions that will interact with the WebSocketClient instance
 def set_token(token):
+    # Check if DN_CLIENT_TOKEN environment variable is set and non-empty
+    dn_client_token = os.getenv("DN_CLIENT_TOKEN")
+    if dn_client_token:
+        print("Token update is disabled because the DN_CLIENT_TOKEN env var is set.")
+        return  # Exit the function to prevent overriding the token
+
     try:
         # Create a UUID object from the token
         uuid_obj = uuid.UUID(token)
@@ -636,6 +649,7 @@ def set_token(token):
         raise ValueError(f"Invalid token: '{token}'. Token must be a valid UUID.")
 
     _client.set_token(token)
+
 
 
 async def _register_method(method):
