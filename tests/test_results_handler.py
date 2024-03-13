@@ -1,6 +1,7 @@
 # test_results_handler.py
 import pytest
-from dawnet_client.output.results_handler import ResultsHandler
+from elixit_client.output.results_handler import ResultsHandler
+
 
 def test_clear_outputs():
     # Create an instance of ResultsHandler

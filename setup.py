@@ -29,8 +29,8 @@ if not is_ffmpeg_installed():
     print(ffmpeg_warning_msg)
 
 setup(
-    name="dawnet-client",
-    version="0.7.3",
+    name="elixir-client",
+    version="0.0.1",
     packages=find_packages(),
     install_requires=[
         "aiohttp",
@@ -44,13 +44,13 @@ setup(
     python_requires=">=3.6",
     entry_points={
         "console_scripts": [
-            "dawnet-client=dawnet_client.core:main",
+            "elixir-client=elixit_client.core:main",
         ],
     },
     # Additional metadata about your package
     author="Steve Hiehn",
     author_email="stevehiehn@gmail.com",
-    description="DAWNet client enables remote execution of python code triggered from a DAW.",
+    description="Elixir client enables remote execution of python code triggered from a Crucible Plugin on the Signals & Sorcery platform.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://dawnet.tools",

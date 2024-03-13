@@ -2,14 +2,14 @@
 
 import argparse
 
-from dawnet_client import ui_param
+from elixit_client import ui_param
 
 parser = argparse.ArgumentParser(description="Connect to DAWNet server.")
 parser.add_argument("token", help="Token for DAWNet server connection")
 args = parser.parse_args()
 
-import dawnet_client as dawnet
-from dawnet_client.core import DAWNetFilePath
+import elixit_client as elixir
+from elixit_client.core import DAWNetFilePath
 
 
 @ui_param("a", "DAWNetNumberSlider", min=0, max=10, step=1, default=5)
@@ -21,33 +21,33 @@ async def arbitrary_method(a: int, b: DAWNetFilePath, c: bool = False):
 
         # DO INFERENCE SHIT HERE
 
-        await dawnet.output().add_file(b)
-        await dawnet.output().add_message("This is a message send to the plugin")
+        await elixir.output().add_file(b)
+        await elixir.output().add_message("This is a message send to the plugin")
 
         return True
     except Exception as e:
-        await dawnet.output().add_error(f"This is an error sent to the plugin: {e}")
+        await elixir.output().add_error(f"This is an error sent to the plugin: {e}")
 
         return False
 
 
-dawnet.set_input_target_format("wav")
-dawnet.set_input_target_channels(2)
-dawnet.set_input_target_sample_rate(44100)
-dawnet.set_input_target_bit_depth(16)
+elixir.set_input_target_format("wav")
+elixir.set_input_target_channels(2)
+elixir.set_input_target_sample_rate(44100)
+elixir.set_input_target_bit_depth(16)
 
-dawnet.set_output_target_format("wav")
-dawnet.set_output_target_channels(2)
-dawnet.set_output_target_sample_rate(44100)
-dawnet.set_output_target_bit_depth(16)
+elixir.set_output_target_format("wav")
+elixir.set_output_target_channels(2)
+elixir.set_output_target_sample_rate(44100)
+elixir.set_output_target_bit_depth(16)
 
-dawnet.set_token(token=args.token)
-dawnet.set_name("DAWNet Template")
-dawnet.set_description(
+elixir.set_token(token=args.token)
+elixir.set_name("DAWNet Template")
+elixir.set_description(
     "This is a template intended as a starting place to create custom DAWNet functions."
 )
-dawnet.register_method(arbitrary_method)
+elixir.register_method(arbitrary_method)
 
 
 print("REGISTERED TOKEN & " + str(arbitrary_method))
-dawnet.connect_to_server()
+elixir.connect_to_server()

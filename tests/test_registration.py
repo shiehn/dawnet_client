@@ -2,8 +2,8 @@ import uuid
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from dawnet_client import WebSocketClient, DAWNetFilePath
-from dawnet_client import ui_param
+from elixit_client import WebSocketClient, DAWNetFilePath
+from elixit_client import ui_param
 
 
 # Example method to register
