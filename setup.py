@@ -30,7 +30,7 @@ if not is_ffmpeg_installed():
 
 setup(
     name="elixir-client",
-    version="0.0.1",
+    version="0.7.6",
     packages=find_packages(),
     install_requires=[
         "aiohttp",
@@ -44,7 +44,7 @@ setup(
     python_requires=">=3.6",
     entry_points={
         "console_scripts": [
-            "elixir-client=elixit_client.core:main",
+            "elixir-client=elixir_client.core:main",
         ],
     },
     # Additional metadata about your package
