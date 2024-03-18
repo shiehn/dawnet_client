@@ -2,14 +2,14 @@
 
 import argparse
 
-from elixit_client import ui_param
+from elixir_client import ui_param
 
 parser = argparse.ArgumentParser(description="Connect to DAWNet server.")
 parser.add_argument("token", help="Token for DAWNet server connection")
 args = parser.parse_args()
 
-import elixit_client as elixir
-from elixit_client.core import DAWNetFilePath
+import elixir_client as elixir
+from elixir_client.core import DAWNetFilePath
 
 
 @ui_param("a", "DAWNetNumberSlider", min=0, max=10, step=1, default=5)
